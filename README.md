@@ -23,6 +23,11 @@
 - **특징**: 시스템에 FFmpeg가 없으면 자동으로 다운로드 및 설치.
 - **사용법**: `mp4towebp.bat input.mp4 [output.webp] [fps] [width]`
 
+### 5. upx.exe
+- **기능**: 실행 파일(Binary) 압축 및 크기 최적화.
+- **특징**: `codesign_service`, `tkcli` 등 Go 바이너리 크기를 줄이는 데 사용.
+- **사용법**: `upx.exe -9 -o output_compressed.exe input.exe`
+
 ## 📦 설치 및 사용
 
 이 프로젝트는 독립적으로 클론하여 사용하거나, 다른 프로젝트의 상위 `tools/` 디렉토리로 배치하여 사용합니다.
