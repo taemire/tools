@@ -1,0 +1,293 @@
+{
+    "name": "corporate-blue",
+    "version": "1.0.0",
+    "description": "기업용 블루 테마 - TACHYON 프로젝트 기본 테마",
+    "page": {
+        "size": "A4",
+        "orientation": "portrait",
+        "margins": {
+            "top": 20,
+            "right": 15,
+            "bottom": 20,
+            "left": 15
+        }
+    },
+    "fonts": {
+        "primary": {
+            "family": "Malgun Gothic",
+            "regular": "fonts/malgun.ttf",
+            "bold": "fonts/malgunbd.ttf"
+        },
+        "code": {
+            "family": "Malgun Gothic",
+            "regular": "fonts/malgun.ttf"
+        }
+    },
+    "colors": {
+        "primary": "#0056b3",
+        "secondary": "#64748b",
+        "accent": "#3b82f6",
+        "text": {
+            "default": "#333333",
+            "muted": "#666666",
+            "light": "#777777"
+        },
+        "background": {
+            "default": "#ffffff",
+            "alt": "#f8fafc",
+            "code": "#1e293b"
+        },
+        "border": "#e2e8f0"
+    },
+    "cover": {
+        "enabled": true,
+        "topBorder": {
+            "enabled": true,
+            "height": 15,
+            "color": "primary"
+        },
+        "logo": {
+            "position": {
+                "x": "right",
+                "y": 50
+            },
+            "fontSize": 24,
+            "color": "primary"
+        },
+        "title": {
+            "position": {
+                "x": 40,
+                "y": 280
+            },
+            "fontSize": 48,
+            "fontWeight": "bold",
+            "color": "text.default"
+        },
+        "subtitle": {
+            "position": {
+                "x": 40,
+                "y": 350
+            },
+            "fontSize": 20,
+            "color": "text.muted",
+            "leftBorder": {
+                "enabled": true,
+                "width": 4,
+                "color": "primary"
+            }
+        },
+        "infoTable": {
+            "position": {
+                "x": 40,
+                "y": 650
+            },
+            "labelWidth": 100,
+            "valueWidth": 415,
+            "rowHeight": 35,
+            "labelBackground": "background.alt",
+            "fontSize": 12,
+            "fields": [
+                "발행일",
+                "버전",
+                "작성자",
+                "참여자"
+            ]
+        },
+        "copyright": {
+            "position": {
+                "x": 40,
+                "y": 780
+            },
+            "fontSize": 12,
+            "color": "text.light",
+            "template": "© {{year}} {{copyright}}. All Rights Reserved."
+        }
+    },
+    "toc": {
+        "enabled": true,
+        "title": {
+            "text": "📋 목차",
+            "fontSize": 24,
+            "color": "primary"
+        },
+        "background": {
+            "enabled": true,
+            "color": "background.alt",
+            "padding": 20,
+            "borderRadius": 12
+        },
+        "item": {
+            "fontSize": 14,
+            "color": "primary",
+            "lineHeight": 30,
+            "showPageNumber": true,
+            "pageNumberAlign": "right",
+            "dotLeader": {
+                "enabled": true,
+                "char": ".",
+                "spacing": 3,
+                "color": "text.light"
+            },
+            "clickable": true
+        },
+        "levels": {
+            "h1": {
+                "indent": 0,
+                "fontSize": 14,
+                "bold": true
+            },
+            "h2": {
+                "indent": 15,
+                "fontSize": 13,
+                "bold": false
+            },
+            "h3": {
+                "indent": 30,
+                "fontSize": 12,
+                "bold": false
+            }
+        },
+        "header": {
+            "enabled": false
+        },
+        "footer": {
+            "enabled": false
+        }
+    },
+    "content": {
+        "header": {
+            "enabled": true,
+            "height": 35,
+            "text": "{{header}}",
+            "fontSize": 10,
+            "color": "secondary",
+            "align": "left",
+            "border": {
+                "bottom": true,
+                "color": "border"
+            }
+        },
+        "footer": {
+            "enabled": true,
+            "height": 25,
+            "left": {
+                "text": "{{footer}}",
+                "fontSize": 10,
+                "color": "secondary"
+            },
+            "right": {
+                "text": "Page {{page}}",
+                "fontSize": 10,
+                "color": "secondary"
+            },
+            "border": {
+                "top": true,
+                "color": "border"
+            }
+        },
+        "heading": {
+            "h1": {
+                "fontSize": 28,
+                "color": "primary",
+                "marginTop": 20,
+                "marginBottom": 15,
+                "underline": true,
+                "underlineColor": "border"
+            },
+            "h2": {
+                "fontSize": 22,
+                "color": "primary",
+                "marginTop": 15,
+                "marginBottom": 10,
+                "leftBorder": true,
+                "leftBorderWidth": 4,
+                "leftBorderColor": "primary"
+            },
+            "h3": {
+                "fontSize": 18,
+                "color": "text.default",
+                "marginTop": 12,
+                "marginBottom": 8
+            },
+            "h4": {
+                "fontSize": 14,
+                "color": "text.default",
+                "marginTop": 10,
+                "marginBottom": 6
+            }
+        },
+        "paragraph": {
+            "fontSize": 12,
+            "lineHeight": 1.8,
+            "color": "text.default"
+        },
+        "code": {
+            "inline": {
+                "fontSize": 11,
+                "fontFamily": "code",
+                "backgroundColor": "#f1f5f9",
+                "padding": {
+                    "horizontal": 4,
+                    "vertical": 2
+                },
+                "borderRadius": 4,
+                "color": "#be185d"
+            },
+            "block": {
+                "fontSize": 11,
+                "fontFamily": "code",
+                "backgroundColor": "background.code",
+                "color": "#e2e8f0",
+                "padding": 15,
+                "borderRadius": 8,
+                "lineNumbers": true
+            }
+        },
+        "table": {
+            "headerBackground": "primary",
+            "headerColor": "#ffffff",
+            "borderColor": "border",
+            "cellPadding": {
+                "horizontal": 12,
+                "vertical": 8
+            },
+            "altRowBackground": "background.alt"
+        },
+        "list": {
+            "bullet": {
+                "fontSize": 12,
+                "indent": 20,
+                "spacing": 6
+            },
+            "numbered": {
+                "fontSize": 12,
+                "indent": 20,
+                "spacing": 6
+            }
+        },
+        "blockquote": {
+            "backgroundColor": "#eff6ff",
+            "leftBorder": {
+                "width": 4,
+                "color": "primary"
+            },
+            "padding": {
+                "horizontal": 20,
+                "vertical": 16
+            },
+            "borderRadius": 8
+        },
+        "links": {
+            "internal": {
+                "color": "primary",
+                "underline": false,
+                "clickable": true
+            },
+            "external": {
+                "color": "accent",
+                "underline": true,
+                "clickable": true
+            }
+        }
+    }
+}

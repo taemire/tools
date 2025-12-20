@@ -82,12 +82,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Find sidebar to determine file order
-	sidebarPath := filepath.Join(*inputDir, "_sidebar.md")
-	files, err := parseSidebar(sidebarPath, *inputDir)
+	// Check if input is file or directory
+	info, err := os.Stat(*inputDir)
 	if err != nil {
-		fmt.Printf("[WARN] Could not parse sidebar, scanning directory: %v\n", err)
-		files, _ = scanMarkdownFiles(*inputDir)
+		fmt.Printf("[ERROR] Input path not found: %s\n", *inputDir)
+		os.Exit(1)
+	}
+
+	var files []string
+	if info.IsDir() {
+		sidebarPath := filepath.Join(*inputDir, "_sidebar.md")
+		files, err = parseSidebar(sidebarPath, *inputDir)
+		if err != nil {
+			fmt.Printf("[WARN] Could not parse sidebar, scanning directory: %v\n", err)
+			files, _ = scanMarkdownFiles(*inputDir)
+		}
+	} else {
+		files = []string{*inputDir}
 	}
 
 	fmt.Printf("[INFO] Found %d markdown files\n", len(files))
@@ -101,6 +112,12 @@ func main() {
 	)
 
 	for _, file := range files {
+		// Skip README.md if we have multiple files (it's usually just a web landing page)
+		if len(files) > 1 && strings.EqualFold(filepath.Base(file), "readme.md") {
+			fmt.Printf("[INFO] Skipping %s (Web landing page)\n", filepath.Base(file))
+			continue
+		}
+
 		content, err := os.ReadFile(file)
 		if err != nil {
 			fmt.Printf("[WARN] Could not read %s: %v\n", file, err)
@@ -117,15 +134,24 @@ func main() {
 		htmlContent := convertMermaidBlocks(buf.String())
 		htmlContent = rewriteAssetPaths(htmlContent)
 
-		// Extract title from first heading
-		titleText := extractTitle(string(content))
+		// Extract title and level from first heading
+		titleText, level := extractTitle(string(content))
 		id := generateID(file)
+
+		// Merge content if level is 2 (H2) and there is a previous section
+		if level == 2 && len(sections) > 0 {
+			lastIdx := len(sections) - 1
+			// Append content to previous section with a separator line
+			sections[lastIdx].Content += fmt.Sprintf("\n<div id=\"%s\"></div>\n%s", id, htmlContent)
+			fmt.Printf("[INFO] Merged %s into previous section '%s'\n", file, sections[lastIdx].Title)
+			continue
+		}
 
 		sections = append(sections, ManualSection{
 			Title:   titleText,
 			ID:      id,
 			Content: htmlContent,
-			Level:   1,
+			Level:   level,
 		})
 	}
 
@@ -184,15 +210,32 @@ func scanMarkdownFiles(dir string) ([]string, error) {
 	return files, err
 }
 
-func extractTitle(content string) string {
+func extractTitle(content string) (string, int) {
 	lines := strings.Split(content, "\n")
+	var secondChoice string
+	inCodeBlock := false
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "```") {
+			inCodeBlock = !inCodeBlock
+			continue
+		}
+		if inCodeBlock {
+			continue
+		}
+
 		if strings.HasPrefix(line, "# ") {
-			return strings.TrimPrefix(line, "# ")
+			return strings.TrimPrefix(line, "# "), 1
+		}
+		if secondChoice == "" && strings.HasPrefix(line, "## ") {
+			secondChoice = strings.TrimPrefix(line, "## ")
 		}
 	}
-	return "Untitled"
+	if secondChoice != "" {
+		return secondChoice, 2
+	}
+	return "Untitled", 0
 }
 
 func generateID(filePath string) string {
