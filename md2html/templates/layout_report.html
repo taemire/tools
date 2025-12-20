@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} v{{.Version}}</title>
+    <!-- Pretendard Font -->
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        /* Base Reset */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            color: #333;
+            background: #525659;
+        }
+
+        /* Container for Web View */
+        .document-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 40px auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- Cover Styles (Provided by User) --- */
+        .cover-page {
+            width: 210mm;
+            height: 297mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 40px;
+            box-sizing: border-box;
+            border-top: 15px solid #0056b3;
+            background: linear-gradient(135deg, #ffffff 0%, #f4f7f9 100%);
+            page-break-after: always;
+            position: relative;
+        }
+
+        .header {
+            text-align: right;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0056b3;
+        }
+
+        .main-content {
+            margin-top: 100px;
+        }
+
+        .category {
+            font-size: 18px;
+            color: #666;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .title {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1.2;
+            color: #1a1a1a;
+            word-break: keep-all;
+            margin-bottom: 20px;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: #444;
+            border-left: 4px solid #0056b3;
+            padding-left: 15px;
+        }
+
+        .footer {
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 15px;
+            font-size: 14px;
+            color: #777;
+        }
+
+        .info-table td {
+            padding: 5px 0;
+            padding-right: 20px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* --------------------------------------- */
+
+        /* --- Content Layout (TOC & Body) --- */
+        .content-page {
+            padding: 40px 60px;
+            background: white;
+        }
+
+        /* TOC */
+        .toc {
+            background: #f8fafc;
+            padding: 30px 40px;
+            border-radius: 12px;
+            margin: 40px 0;
+            page-break-after: always;
+        }
+
+        .toc h2 {
+            color: #0056b3;
+            border: none;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .toc li {
+            margin: 12px 0;
+        }
+
+        .toc a {
+            color: #0056b3;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 28px;
+            color: #0056b3;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+            margin-top: 50px;
+        }
+
+        h2 {
+            font-size: 22px;
+            color: #334155;
+            margin-top: 40px;
+            border-left: 4px solid #0056b3;
+            padding-left: 16px;
+        }
+
+        h3 {
+            font-size: 18px;
+            color: #475569;
+            margin-top: 30px;
+        }
+
+        p {
+            line-height: 1.8;
+            margin: 1em 0;
+        }
+
+        /* Code */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #be185d;
+        }
+
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        pre code {
+            background: none;
+            color: #e2e8f0;
+            padding: 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            text-align: left;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        td {
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        /* Alerts */
+        blockquote {
+            background: #eff6ff;
+            border-left: 4px solid #0056b3;
+            padding: 16px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        /* Mermaid */
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        /* Print Settings */
+        @page {
+            size: A4;
+            margin: 15mm;
+
+            @bottom-right {
+                content: counter(page);
+                font-size: 10pt;
+            }
+        }
+
+        @page :first {
+            margin: 0;
+
+            @bottom-right {
+                content: none;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .document-container {
+                width: 100%;
+                margin: 0;
+                box-shadow: none;
+            }
+
+            .cover-page {
+                page-break-after: always;
+                width: 100%;
+                height: 100vh;
+            }
+
+            .content-page {
+                padding: 0;
+            }
+
+            .section {
+                page-break-before: always;
+            }
+
+            .section:first-of-type {
+                page-break-before: auto;
+            }
+
+            pre,
+            img,
+            table,
+            .mermaid {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="document-container">
+        <!-- Cover -->
+        <div class="cover-page">
+            <div class="header">
+                <div class="logo">TSGroup</div>
+            </div>
+
+            <div class="main-content">
+                <div class="category">{{.Subtitle}}</div>
+                <div class="title">{{.Title}}</div>
+                <div class="subtitle">v{{.Version}} 문서</div>
+            </div>
+
+            <div class="footer">
+                <table class="info-table">
+                    <tr>
+                        <td class="info-label">발행일</td>
+                        <td>{{.Date}}</td>
+                    </tr>
+                    <tr>
+                        <td class="info-label">버전</td>
+                        <td>v{{.Version}}</td>
+                    </tr>
+                    {{if .Author}}
+                    <tr>
+                        <td class="info-label">작성자</td>
+                        <td>{{.Author}}</td>
+                    </tr>
+                    {{end}}
+                </table>
+                <div class="copyright">
+                    © {{if .Date}}{{slice .Date 0 4}}{{else}}2025{{end}} {{if .Author}}{{.Author}}{{else}}Code Signing
+                    Service{{end}}. All Rights Reserved.
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-page">
+            <!-- TOC -->
+            <div class="toc">
+                <h2>📋 목차</h2>
+                <ul>
+                    {{range $i, $s := .Sections}}
+                    <li><a href="#{{$s.ID}}">{{inc $i}}. {{$s.Title}}</a></li>
+                    {{end}}
+                </ul>
+            </div>
+
+            <!-- Sections -->
+            {{range $i, $s := .Sections}}
+            <div class="section" id="{{$s.ID}}">
+                {{$s.Content}}
+            </div>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- Mermaid.js -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+    </script>
+
+</body>
+
+</html>
