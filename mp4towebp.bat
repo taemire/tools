@@ -25,13 +25,18 @@ IF "%INPUT%"=="" (
     EXIT /B 1
 )
 
-REM Check if FFmpeg is installed
-where ffmpeg >nul 2>&1
-IF ERRORLEVEL 1 (
-    echo Error: FFmpeg not found!
-    echo Please install FFmpeg: https://ffmpeg.org/download.html
-    echo Or use: winget install FFmpeg
-    EXIT /B 1
+REM Check if FFmpeg is installed (Priority: Local > System)
+SET FFMPEG_CMD=ffmpeg
+IF EXIST "%~dp0ffmpeg.exe" (
+    SET FFMPEG_CMD="%~dp0ffmpeg.exe"
+) ELSE (
+    where ffmpeg >nul 2>&1
+    IF ERRORLEVEL 1 (
+        echo Error: FFmpeg not found!
+        echo Please place ffmpeg.exe in this directory or install it system-wide.
+        echo Download: https://ffmpeg.org/download.html
+        EXIT /B 1
+    )
 )
 
 REM Set defaults
@@ -53,7 +58,8 @@ echo ============================================
 REM Convert using FFmpeg
 echo.
 echo Converting...
-ffmpeg -y -i "%INPUT%" -vf "fps=%FPS%,scale=%WIDTH%:-1:flags=lanczos" -vcodec libwebp -lossless 0 -compression_level 6 -q:v 70 -loop 0 -preset default -an -vsync 0 "%OUTPUT%"
+echo Converting...
+%FFMPEG_CMD% -y -i "%INPUT%" -vf "fps=%FPS%,scale=%WIDTH%:-1:flags=lanczos" -vcodec libwebp -lossless 0 -compression_level 6 -q:v 70 -loop 0 -preset default -an -vsync 0 "%OUTPUT%"
 
 IF ERRORLEVEL 1 (
     echo.
