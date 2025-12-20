@@ -7,30 +7,54 @@ set LOG_FILE=%TEMP%\git_log_%RANDOM%.txt
 :: 옵션 파싱
 :parse_args
 if "%~1"=="" goto :main
+if /i "%~1"=="-h" goto :print_usage
+if /i "%~1"=="--help" goto :print_usage
 if /i "%~1"=="-n" (
     set COUNT=%~2
     shift
     shift
     goto :parse_args
+)
+if /i "%~1"=="--count" (
+    set COUNT=%~2
+    shift
+    shift
     goto :parse_args
 )
-if /i "%~1"=="-full" (
-    goto :main_full
-)
+if /i "%~1"=="-f" set SHOW_FULL=1& shift& goto :parse_args
+if /i "%~1"=="--full" set SHOW_FULL=1& shift& goto :parse_args
+if /i "%~1"=="-full" set SHOW_FULL=1& shift& goto :parse_args
+if /i "%~1"=="-a" set SHOW_ALL=1& shift& goto :parse_args
+if /i "%~1"=="--all" set SHOW_ALL=1& shift& goto :parse_args
+if /i "%~1"=="-p" set NO_PAGER=1& shift& goto :parse_args
+if /i "%~1"=="--no-pager" set NO_PAGER=1& shift& goto :parse_args
 shift
 goto :parse_args
 
-:main_full
+:print_usage
 echo.
-echo ========================================
-echo   Commit History (Full Details)
-echo ========================================
+echo Usage: check_version.bat [OPTIONS]
 echo.
-git log -n %COUNT% --pretty=format:"Commit: %%h (%%ad)%%nTag:    %%D%%nSummary: %%s%%n%%n%%b%%n--------------------------------------------------------------------------------" --date=short
+echo Display git commit history and version information in a formatted table.
+echo.
+echo Options:
+echo   -n, --count ^<number^>    Number of commits to display (default: 10)
+echo   -a, --all               Show all commits (overrides -n)
+echo   -f, --full              Show full commit details including body
+echo   -p, --no-pager          Disable pagination (useful for full output)
+echo   -h, --help              Display this help message
+echo.
+echo Examples:
+echo   check_version.bat
+echo   check_version.bat -n 20
+echo   check_version.bat --full
+echo   check_version.bat -a -f -p
 echo.
 goto :eof
 
 :main
+if "%SHOW_ALL%"=="1" set COUNT=999999
+
 :: 1. 리포지토리 정보 가져오기
 for /f "usebackq delims=" %%i in (`git rev-parse --show-toplevel 2^>nul`) do set "REPO_PATH=%%i"
 if not defined REPO_PATH (
@@ -43,6 +67,8 @@ for %%i in ("%REPO_PATH%") do set "REPO_NAME=%%~nxi"
 echo.
 echo [%REPO_NAME%] %CD%
 echo.
+
+if "%SHOW_FULL%"=="1" goto :main_full
 
 :: Use PowerShell for smart formatting
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
@@ -65,9 +91,25 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
             "Description = $desc" ^
         "};" ^
         "$current--;" ^
-    "} | Format-Table -Property @{N='Rev';E={$_.Rev};Width=8}, @{N='Tag';E={$_.Tag};Width=16}, @{N='Hash';E={$_.Hash};Width=12}, @{N='Time';E={$_.Time};Width=21}, @{N='Description';E={$_.Description}} -AutoSize"
+    "} | Format-Table -AutoSize Rev, Tag, Hash, Time, Description | Out-String -Stream | Where-Object { $_.Trim() -ne '' }"
 
 echo.
+goto :footer
+
+:main_full
+set GIT_CMD=git
+if "%NO_PAGER%"=="1" set GIT_CMD=git --no-pager
+
+echo ========================================
+echo   Commit History (Full Details)
+echo ========================================
+%GIT_CMD% log -n %COUNT% --pretty=format:"Commit: %%h (%%ad)%%nTag:    %%D%%nSummary: %%s%%n%%n%%b%%n--------------------------------------------------------------------------------" --date=short
+goto :eof
+
+:footer
+:: Get total commit count for HEAD
+for /f "usebackq" %%n in (`git rev-list --count HEAD`) do set TOTAL_COMMITS=%%n
+
 for /f %%i in ('git rev-parse --short HEAD') do set HEAD_HASH=%%i
 :: HEAD에 태그가 있는지 확인
 set "HEAD_TAG="
@@ -79,7 +121,6 @@ if defined HEAD_TAG (
 ) else (
     echo Current HEAD: r%TOTAL_COMMITS% ^(%HEAD_HASH%^)
 )
-echo.
 
 :: 정리
 if exist "%LOG_FILE%" del "%LOG_FILE%"
