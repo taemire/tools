@@ -28,10 +28,24 @@ type PDFRenderer struct {
 	fontPath   string
 	fontSize   float64
 	lineHeight float64
-	marginL    float64
-	marginT    float64
-	contentW   float64
+	// Layout Constants
+	marginL  float64
+	marginT  float64 // Top margin for content
+	marginB  float64 // Bottom margin for content
+	contentW float64
+
+	// State
+	currentTitle string // For Header
 }
+
+// Colors
+func (r *PDFRenderer) setPrimaryColor() { r.pdf.SetTextColor(9, 9, 11) }        // #09090b
+func (r *PDFRenderer) setMutedColor()   { r.pdf.SetTextColor(113, 113, 122) }   // #71717a
+func (r *PDFRenderer) setAccentColor()  { r.pdf.SetTextColor(37, 99, 235) }     // #2563eb
+func (r *PDFRenderer) setBorderColor()  { r.pdf.SetStrokeColor(228, 228, 231) } // #e4e4e7
+func (r *PDFRenderer) setWhiteColor()   { r.pdf.SetTextColor(255, 255, 255) }
+
+const mm2pt = 2.83464567
 
 func main() {
 	input := flag.String("i", "", "Input markdown file")
@@ -55,11 +69,14 @@ func main() {
 	reader := text.NewReader(data)
 	doc := md.Parser().Parse(reader)
 
-	margin := 15.0 * 2.83464567
+	marginH := 20.0 * mm2pt
+	marginV := 25.0 * mm2pt
+
 	r := &PDFRenderer{
-		marginL:    margin,
-		marginT:    margin,
-		contentW:   595.28 - (margin * 2),
+		marginL:    marginH,
+		marginT:    marginV,
+		marginB:    marginV,
+		contentW:   595.28 - (marginH * 2),
 		fontSize:   11,
 		lineHeight: 18,
 	}
@@ -79,11 +96,29 @@ func main() {
 	pdf.AddPage() // Page 1: Cover
 	r.renderCover()
 
+	// Check if TOC needs multiple pages
+	r.pageCount = 2
+	tocPages := r.calculateTOCPages()
+	if tocPages > 1 {
+		// Shift all content page numbers
+		shift := tocPages - 1
+		for i := range r.toc {
+			r.toc[i].PageNum += shift
+		}
+	}
+
 	pdf.AddPage() // Page 2: Table of Contents
+	r.renderHeader("TABLE OF CONTENTS")
+	r.renderFooter()
+
 	r.renderTOC()
 
-	r.pageCount = 3
-	pdf.AddPage() // Page 3: Start Content
+	// Set correct page count for content start
+	r.pageCount = 2 + tocPages
+	pdf.AddPage()                  // Start Content
+	r.renderHeader("INTRODUCTION") // Default start
+	r.renderFooter()
+
 	pdf.SetY(r.marginT)
 	r.renderNode(doc, data)
 
@@ -108,14 +143,14 @@ func (r *PDFRenderer) simulateTOC(n ast.Node, source []byte) {
 				PageNum: r.pageCount,
 			})
 			height := 40.0
-			if currentY+height > 841.89-r.marginT {
+			if currentY+height > 841.89-r.marginB {
 				r.pageCount++
 				currentY = r.marginT
 			}
 			currentY += height
 		} else if _, ok := node.(*ast.Paragraph); ok {
 			height := 60.0 // Simplified fixed height per paragraph for simulation
-			if currentY+height > 841.89-r.marginT {
+			if currentY+height > 841.89-r.marginB {
 				r.pageCount++
 				currentY = r.marginT
 			}
@@ -126,44 +161,194 @@ func (r *PDFRenderer) simulateTOC(n ast.Node, source []byte) {
 }
 
 func (r *PDFRenderer) renderCover() {
-	r.pdf.SetY(150)
-	r.pdf.SetFont("malgun", "", 32)
+	// Cover layout based on sample.html
+	// Padding 25mm 20mm
+
+	// 1. Tag
+	r.pdf.SetY(r.marginT)
+	r.pdf.SetX(r.marginL)
+	r.pdf.SetFillColor(9, 9, 11) // Primary
+	r.pdf.RectFromUpperLeftWithStyle(r.marginL, r.marginT, 120, 24, "F")
+
+	r.setWhiteColor()
+	r.pdf.SetFont("malgun", "", 10)
+	r.pdf.SetX(r.marginL + 10)
+	r.pdf.SetY(r.marginT + 6)
+	r.pdf.Cell(nil, "CODESIGN SERVICE MANUAL")
+
+	// 2. Big Title
+	r.setPrimaryColor()
+	r.pdf.SetFont("malgun", "", 42)
+	r.pdf.SetY(r.marginT + 60)
+	r.pdf.SetX(r.marginL)
+	r.pdf.Cell(nil, "CodeSign Service")
+	r.pdf.Br(50)
 	r.pdf.SetX(r.marginL)
 	r.pdf.Cell(nil, "User Manual")
+
+	// 3. Subtitle
+	r.setMutedColor()
+	r.pdf.SetFont("malgun", "", 18)
+	r.pdf.Br(30)
+	r.pdf.SetX(r.marginL)
+	r.pdf.Cell(nil, "Operational Guide & Reference")
+
+	// 4. Info Block (Bottom)
+	bottomY := 841.89 - r.marginB - 100
+	r.pdf.SetY(bottomY)
+	r.pdf.SetFont("malgun", "", 10)
+	r.setPrimaryColor()
+
+	// Draw info rows
+	infos := []string{
+		"Author: Technical Writing Team",
+		"Date: 2025-12-21",
+		"Version: v1.0.2",
+	}
+
+	for _, info := range infos {
+		r.pdf.SetX(r.marginL)
+		r.pdf.Cell(nil, info)
+		r.pdf.Br(14)
+	}
+
+	// Copyright
+	r.setBorderColor()
+	r.pdf.Line(r.marginL, bottomY+50, 595.28-r.marginL, bottomY+50)
+
+	r.setMutedColor()
+	r.pdf.SetFont("malgun", "", 9)
+	r.pdf.SetY(bottomY + 65)
+	r.pdf.SetX(r.marginL)
+	r.pdf.Cell(nil, "© 2025 Signin Technical. All rights reserved.")
+}
+
+func (r *PDFRenderer) renderHeader(rightText string) {
+	r.currentTitle = rightText
+
+	y := 10.0 * mm2pt
+	r.pdf.SetY(y)
+
+	// Left: Static Title
+	r.setMutedColor()
+	r.pdf.SetFont("malgun", "", 9)
+	r.pdf.SetX(r.marginL)
+	r.pdf.Cell(nil, "CODESIGN SERVICE 2025")
+
+	// Right: Dynamic Section
+	if rightText != "" {
+		w, _ := r.pdf.MeasureTextWidth(rightText)
+		r.pdf.SetX(595.28 - r.marginL - w)
+		r.pdf.Cell(nil, rightText)
+	}
+
+	// Line
+	r.setBorderColor()
+	lineY := y + 12
+	r.pdf.Line(r.marginL, lineY, 595.28-r.marginL, lineY)
+}
+
+func (r *PDFRenderer) renderFooter() {
+	y := 841.89 - (10.0 * mm2pt)
+
+	// Line
+	r.setBorderColor()
+	lineY := y - 12
+	r.pdf.Line(r.marginL, lineY, 595.28-r.marginL, lineY)
+
+	// Left: Copyright
+	r.setMutedColor()
+	r.pdf.SetFont("malgun", "", 9)
+	r.pdf.SetY(y - 5)
+	r.pdf.SetX(r.marginL)
+	r.pdf.Cell(nil, "© 2025 Signin Technical Group")
+
+	// Right: Page Numer
+	pageStr := fmt.Sprintf("Page %02d", r.pageCount)
+	w, _ := r.pdf.MeasureTextWidth(pageStr)
+	r.pdf.SetX(595.28 - r.marginL - w)
+	r.pdf.Cell(nil, pageStr)
+}
+
+func (r *PDFRenderer) calculateTOCPages() int {
+	// Calculate height needed for TOC
+	// Title (40) + Gap (40) + Items
+	currentY := r.marginT + 40 + 40
+	pages := 1
+
+	for range r.toc {
+		itemH := r.lineHeight * 1.5
+		if currentY+itemH > 841.89-r.marginB {
+			pages++
+			currentY = r.marginT
+		}
+		currentY += itemH
+	}
+	return pages
 }
 
 func (r *PDFRenderer) renderTOC() {
+	// Header is already drawn for the first page
 	r.pdf.SetY(r.marginT)
-	r.pdf.SetFont("malgun", "", 18)
+
+	// Title
+	r.setPrimaryColor()
+	r.pdf.SetFont("malgun", "", 24)
 	r.pdf.SetX(r.marginL)
 	r.pdf.Cell(nil, "목차")
 	r.pdf.Br(40)
 
 	r.pdf.SetFont("malgun", "", 11)
+
 	for _, entry := range r.toc {
+		// Check Page Break
+		if r.pdf.GetY()+r.lineHeight*1.5 > 841.89-r.marginB {
+			r.pdf.AddPage()
+			r.pageCount++ // Increment visible page number
+			r.renderHeader("TABLE OF CONTENTS")
+			r.renderFooter()
+			r.pdf.SetY(r.marginT)
+		}
+
 		indent := float64(entry.Level-1) * 20
 		r.pdf.SetX(r.marginL + indent)
 
+		r.setPrimaryColor()
 		title := entry.Title
-		pageNum := fmt.Sprintf("%d", entry.PageNum)
 
+		r.setAccentColor()
+		pageNum := fmt.Sprintf("%02d", entry.PageNum)
+
+		r.pdf.SetFont("malgun", "", 11)
 		tw, _ := r.pdf.MeasureTextWidth(title)
 		pw, _ := r.pdf.MeasureTextWidth(pageNum)
 
+		// Title
+		r.setPrimaryColor()
 		r.pdf.Cell(nil, title)
 
-		// Dot Leader
+		// Dots
+		r.setBorderColor()
 		dotStart := r.marginL + indent + tw + 5
 		dotEnd := r.marginL + r.contentW - pw - 5
 		if dotEnd > dotStart {
-			dots := strings.Repeat(".", int((dotEnd-dotStart)/2))
-			r.pdf.SetX(dotStart)
-			r.pdf.Cell(nil, dots)
+			dots := ""
+			dotW, _ := r.pdf.MeasureTextWidth(".")
+			count := int((dotEnd - dotStart) / dotW)
+			if count > 0 {
+				dots = strings.Repeat(".", count)
+				r.pdf.SetX(dotStart)
+				r.setMutedColor()
+				r.pdf.Cell(nil, dots)
+			}
 		}
 
+		// PageNum
+		r.setAccentColor()
 		r.pdf.SetX(r.marginL + r.contentW - pw)
 		r.pdf.Cell(nil, pageNum)
-		r.pdf.Br(r.lineHeight)
+
+		r.pdf.Br(r.lineHeight * 1.5)
 	}
 }
 
@@ -171,13 +356,18 @@ func (r *PDFRenderer) renderNode(n ast.Node, source []byte) {
 	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
 		switch node := c.(type) {
 		case *ast.Heading:
-			r.checkPageBreak(40)
+			r.checkPageBreak(40, string(node.Text(source)))
+			r.setPrimaryColor()
 			r.pdf.SetFont("malgun", "", float64(24-node.Level*2))
 			r.pdf.SetX(r.marginL)
 			r.pdf.Cell(nil, string(node.Text(source)))
 			r.pdf.Br(30)
+
+			// Update current section title
+			r.currentTitle = string(node.Text(source))
 		case *ast.Paragraph:
-			r.checkPageBreak(60)
+			r.checkPageBreak(60, "")
+			r.setPrimaryColor()
 			r.pdf.SetFont("malgun", "", 11)
 			r.pdf.SetX(r.marginL)
 			text := string(node.Text(source))
@@ -210,10 +400,19 @@ func (r *PDFRenderer) renderWrappedText(text string) {
 	r.pdf.Cell(nil, line)
 }
 
-func (r *PDFRenderer) checkPageBreak(h float64) {
-	if r.pdf.GetY()+h > 841.89-r.marginT {
+func (r *PDFRenderer) checkPageBreak(h float64, newTitle string) {
+	if r.pdf.GetY()+h > 841.89-r.marginB {
 		r.pdf.AddPage()
 		r.pageCount++
+
+		// Use new title if provided (for Header)
+		title := r.currentTitle
+		if newTitle != "" {
+			title = newTitle
+		}
+
+		r.renderHeader(title)
+		r.renderFooter()
 		r.pdf.SetY(r.marginT)
 	}
 }
