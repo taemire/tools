@@ -3,8 +3,11 @@ package main
 import (
 	"bytes"
 	"embed"
+	"encoding/base64"
 	"flag"
 	"fmt"
+	"mime"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -51,6 +54,7 @@ func main() {
 	var templateName string
 	flag.StringVar(&templateName, "template", "default", "Template name (see available templates below)")
 	flag.StringVar(&templateName, "t", "default", "Template name (shorthand)")
+	embedImgs := flag.Bool("embed", true, "Embed images as Base64 (default: true)")
 
 	showVersion := flag.Bool("v", false, "Show version")
 
@@ -124,14 +128,27 @@ func main() {
 			continue
 		}
 
+		// Pre-process: Handle Docsify syntax
+		stringContent := string(content)
+		stringContent = preprocessDocsify(stringContent)
+
 		var buf bytes.Buffer
-		if err := md.Convert(content, &buf); err != nil {
+		if err := md.Convert([]byte(stringContent), &buf); err != nil {
 			fmt.Printf("[WARN] Could not convert %s: %v\n", file, err)
 			continue
 		}
 
-		// Post-process: Convert mermaid code blocks to mermaid divs
-		htmlContent := convertMermaidBlocks(buf.String())
+		// Post-process: Convert mermaid code blocks
+		htmlContent := buf.String()
+		htmlContent = convertMermaidBlocks(htmlContent)
+		htmlContent = postProcessAlerts(htmlContent)
+
+		if *embedImgs {
+			htmlContent = embedImages(htmlContent, file)
+			htmlContent = embedStylesheets(htmlContent, file)
+		}
+
+		htmlContent = processUIComponents(htmlContent, file)
 		htmlContent = rewriteAssetPaths(htmlContent)
 
 		// Extract title and level from first heading
@@ -252,7 +269,188 @@ func convertMermaidBlocks(html string) string {
 	return re.ReplaceAllString(html, `<div class="mermaid">$1</div>`)
 }
 
+func preprocessDocsify(content string) string {
+	lines := strings.Split(content, "\n")
+	var newLines []string
+	inAlert := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		isImportant := strings.HasPrefix(trimmed, "!> ")
+		isTip := strings.HasPrefix(trimmed, "?> ")
+
+		if isImportant || isTip {
+			inAlert = true
+			prefix := "> [!IMPORTANT] "
+			clean := strings.TrimPrefix(trimmed, "!> ")
+			if isTip {
+				prefix = "> [!TIP] "
+				clean = strings.TrimPrefix(trimmed, "?> ")
+			}
+			newLines = append(newLines, prefix+clean)
+		} else if inAlert {
+			if trimmed == "" {
+				inAlert = false
+				newLines = append(newLines, "")
+			} else {
+				// Continuation of alert - treated as blockquote
+				newLines = append(newLines, "> "+line)
+			}
+		} else {
+			newLines = append(newLines, line)
+		}
+	}
+	return strings.Join(newLines, "\n")
+}
+
+func postProcessAlerts(htmlContent string) string {
+	// Pattern for Important: <blockquote><p>[!IMPORTANT] content...</p>...</blockquote>
+	// Goldmark renders > text as <blockquote><p>text</p></blockquote>
+
+	// 1차 변환: blockquote를 alert div로 변환
+	reImp := regexp.MustCompile(`(?s)<blockquote>\s*<p>\s*\[!IMPORTANT\]\s*(.*?)</p>(\s*.*?)</blockquote>`)
+	htmlContent = reImp.ReplaceAllString(htmlContent, `<div class="alert alert-important"><div class="alert-icon"><i class="fas fa-exclamation-circle"></i></div><div class="alert-content"><p>$1</p>$2</div></div>`)
+
+	reTip := regexp.MustCompile(`(?s)<blockquote>\s*<p>\s*\[!TIP\]\s*(.*?)</p>(\s*.*?)</blockquote>`)
+	htmlContent = reTip.ReplaceAllString(htmlContent, `<div class="alert alert-tip"><div class="alert-icon"><i class="fas fa-lightbulb"></i></div><div class="alert-content"><p>$1</p>$2</div></div>`)
+
+	// 2차 변환: <p><strong>제목</strong>: 내용</p> 패턴을 제목/본문으로 분리
+	// 예: <p><strong>알림</strong>: 다른 곳에서...</p> → <div class="alert-title">알림</div><p class="alert-body">다른 곳에서...</p>
+	reTitleBody := regexp.MustCompile(`<p><strong>([^<]+)</strong>\s*:\s*(.+?)</p>`)
+	htmlContent = reTitleBody.ReplaceAllString(htmlContent, `<div class="alert-title">$1</div><p class="alert-body">$2</p>`)
+
+	return htmlContent
+}
+
+func embedImages(htmlContent, mdFilePath string) string {
+	// Find all img tags: <img src="..." ...>
+	// We use regex for simplicity. Be careful with complex HTML.
+	// Capture group 1: src value
+	re := regexp.MustCompile(`<img[^>]+src="([^"]+)"[^>]*>`)
+
+	return re.ReplaceAllStringFunc(htmlContent, func(imgTag string) string {
+		// Extract src
+		subMatch := re.FindStringSubmatch(imgTag)
+		if len(subMatch) < 2 {
+			return imgTag
+		}
+		src := subMatch[1]
+
+		// Skip remote URLs or existing data URIs
+		if strings.HasPrefix(src, "http") || strings.HasPrefix(src, "data:") {
+			return imgTag
+		}
+
+		// Calculate absolute path of image
+		// mdFilePath is absolute path to the markdown file
+		dir := filepath.Dir(mdFilePath)
+		imgPath := filepath.Join(dir, src)
+
+		// Read file
+		data, err := os.ReadFile(imgPath)
+		if err != nil {
+			fmt.Printf("[WARN] Failed to read image for embedding: %s (%v)\n", imgPath, err)
+			return imgTag
+		}
+
+		// Detect MIME type
+		mimeType := mime.TypeByExtension(filepath.Ext(imgPath))
+		if mimeType == "" {
+			// Fallback detection
+			mimeType = http.DetectContentType(data)
+		}
+
+		// Base64 encode
+		encoded := base64.StdEncoding.EncodeToString(data)
+		dataURI := fmt.Sprintf("data:%s;base64,%s", mimeType, encoded)
+
+		// Replace src in the tag
+		return strings.Replace(imgTag, src, dataURI, 1)
+	})
+}
+
+func embedStylesheets(htmlContent, mdFilePath string) string {
+	// Find all link tags for stylesheets: <link rel="stylesheet" href="...">
+	re := regexp.MustCompile(`<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"[^>]*>`)
+
+	return re.ReplaceAllStringFunc(htmlContent, func(linkTag string) string {
+		// Extract href
+		subMatch := re.FindStringSubmatch(linkTag)
+		if len(subMatch) < 2 {
+			return linkTag
+		}
+		href := subMatch[1]
+
+		// Skip remote URLs
+		if strings.HasPrefix(href, "http") {
+			return linkTag
+		}
+
+		// Calculate absolute path of CSS
+		dir := filepath.Dir(mdFilePath)
+		cssPath := filepath.Join(dir, href)
+
+		// Read file
+		data, err := os.ReadFile(cssPath)
+		if err != nil {
+			fmt.Printf("[WARN] Failed to read CSS for embedding: %s (%v)\n", cssPath, err)
+			return linkTag
+		}
+
+		// Wrap in style block
+		return fmt.Sprintf("<style>\n%s\n</style>", string(data))
+	})
+}
+
+func processUIComponents(htmlContent, mdFilePath string) string {
+	// Find all UI component markers: <!-- @ui:component-name -->
+	re := regexp.MustCompile(`<!--\s*@ui:([a-zA-Z0-9_-]+)\s*-->`)
+
+	return re.ReplaceAllStringFunc(htmlContent, func(marker string) string {
+		// Extract component name
+		subMatch := re.FindStringSubmatch(marker)
+		if len(subMatch) < 2 {
+			return marker
+		}
+		componentName := subMatch[1]
+
+		// Components are expected to be in assets/ui/ relative to manual root
+		dir := filepath.Dir(mdFilePath)
+		var assetsDir string
+
+		// Look up for 'assets' directory
+		curr := dir
+		for i := 0; i < 5; i++ { // limit search depth
+			testPath := filepath.Join(curr, "assets", "ui", componentName+".html")
+			if _, err := os.Stat(testPath); err == nil {
+				assetsDir = testPath
+				break
+			}
+			parent := filepath.Dir(curr)
+			if parent == curr {
+				break
+			}
+			curr = parent
+		}
+
+		if assetsDir == "" {
+			fmt.Printf("[WARN] UI Component not found: %s\n", componentName)
+			return marker
+		}
+
+		// Read component file
+		data, err := os.ReadFile(assetsDir)
+		if err != nil {
+			fmt.Printf("[WARN] Failed to read UI component file: %s (%v)\n", assetsDir, err)
+			return marker
+		}
+
+		return string(data)
+	})
+}
+
 // rewriteAssetPaths normalizes asset paths to be relative to the output HTML
+// This runs AFTER embedding, so it only affects images that failed to embed or were skipped.
 func rewriteAssetPaths(html string) string {
 	// Pattern: src="../../assets/..." -> src="assets/..."
 	re := regexp.MustCompile(`src="(?:\.\./)+assets/`)
