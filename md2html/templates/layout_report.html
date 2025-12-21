@@ -140,16 +140,68 @@
 
         .toc li {
             margin: 12px 0;
+            display: flex;
+            align-items: baseline;
         }
 
         .toc a {
             color: #0056b3;
             text-decoration: none;
             font-weight: 500;
+            flex: 0 0 auto;
         }
 
         .toc a:hover {
             text-decoration: underline;
+        }
+
+        /* 목차 페이지 번호 */
+        .toc-page {
+            margin-left: auto;
+            color: #64748b;
+            font-size: 14px;
+            min-width: 30px;
+            text-align: right;
+        }
+
+        .toc-page::before {
+            content: '';
+            flex: 1;
+            border-bottom: 1px dotted #cbd5e1;
+            margin: 0 10px;
+        }
+
+        .toc li {
+            display: flex;
+            align-items: baseline;
+        }
+
+        .toc li::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px dotted #cbd5e1;
+            margin: 0 10px 5px 10px;
+            order: 1;
+        }
+
+        .toc a {
+            order: 0;
+        }
+
+        .toc-page {
+            order: 2;
+        }
+
+        /* 계층적 TOC 서브 아이템 */
+        .toc-sub {
+            margin-left: 20px;
+            font-size: 14px;
+        }
+
+        .toc-sub-l3 {
+            margin-left: 40px;
+            font-size: 13px;
+            color: #64748b;
         }
 
         /* Typography */
@@ -332,14 +384,37 @@
             size: A4;
             margin: 15mm;
 
+            @top-center {
+                content: "{{.Header}}";
+                font-size: 9pt;
+                color: #64748b;
+            }
+
+            @bottom-left {
+                content: "{{.Footer}}";
+                font-size: 9pt;
+                color: #94a3b8;
+            }
+
             @bottom-right {
                 content: counter(page);
                 font-size: 10pt;
+                color: #64748b;
             }
         }
 
+        /* 표지 페이지: 여백 0, 헤더/푸터 숨김, 카운터 0으로 시작 */
         @page :first {
             margin: 0;
+            counter-reset: page 0;
+
+            @top-center {
+                content: none;
+            }
+
+            @bottom-left {
+                content: none;
+            }
 
             @bottom-right {
                 content: none;
@@ -378,6 +453,16 @@
             img,
             table,
             .mermaid {
+                page-break-inside: avoid;
+            }
+
+            /* UI 목업 및 Alert 박스 페이지 잘림 방지 */
+            .ui-auth-card,
+            .ui-admin-card,
+            .ui-modal-mock-container,
+            .ui-dropdown-mock,
+            .ui-mockup-wrapper,
+            .alert {
                 page-break-inside: avoid;
             }
 
@@ -731,7 +816,12 @@
                 <h2>📋 목차</h2>
                 <ul>
                     {{range $i, $s := .Sections}}
-                    <li><a href="#{{$s.ID}}">{{$s.Title}}</a></li>
+                    <li><a href="#{{$s.ID}}">{{$s.Title}}</a><span class="toc-page" data-target="{{$s.ID}}"></span></li>
+                    {{range $j, $sub := $s.SubHeadings}}
+                    <li class="toc-sub{{if eq $sub.Level 3}} toc-sub-l3{{end}}"><a
+                            href="#{{$sub.ID}}">{{$sub.Title}}</a><span class="toc-page"
+                            data-target="{{$sub.ID}}"></span></li>
+                    {{end}}
                     {{end}}
                 </ul>
             </div>
@@ -749,6 +839,30 @@
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script>
         mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+
+        // 목차 페이지 번호 계산 (A4 기준)
+        document.addEventListener('DOMContentLoaded', function () {
+            // A4 페이지 높이 (96dpi 기준, 여백 제외 약 1000px)
+            const PAGE_HEIGHT = 1000;
+            // 페이지 오프셋: 표지는 0, 목차부터 1페이지 시작
+            const PAGE_OFFSET = 1;
+
+            const tocPages = document.querySelectorAll('.toc-page');
+            tocPages.forEach(span => {
+                const targetId = span.dataset.target;
+                const target = document.getElementById(targetId);
+                if (target) {
+                    // 요소의 문서 내 절대 위치
+                    const rect = target.getBoundingClientRect();
+                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    const absoluteTop = rect.top + scrollTop;
+
+                    // 페이지 번호 계산
+                    const pageNum = Math.floor(absoluteTop / PAGE_HEIGHT) + PAGE_OFFSET;
+                    span.textContent = pageNum;
+                }
+            });
+        });
     </script>
 
 </body>

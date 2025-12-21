@@ -19,19 +19,41 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
+	"gopkg.in/yaml.v3"
 )
+
+// AuthorsConfig는 AUTHORS.yml 파일 구조
+type AuthorsConfig struct {
+	ProjectName  string `yaml:"project_name"`
+	Organization string `yaml:"organization"`
+	Copyright    string `yaml:"copyright"`
+	Document     struct {
+		Title    string `yaml:"title"`
+		Subtitle string `yaml:"subtitle"`
+		Header   string `yaml:"header"`
+		Footer   string `yaml:"footer"`
+	} `yaml:"document"`
+}
 
 var (
 	BuildVersion = "1.0.0"
 	BuildTime    = ""
 )
 
+// SubHeading represents a sub-heading within a section (H2, H3, etc.)
+type SubHeading struct {
+	Title string
+	ID    string
+	Level int // 2 for H2, 3 for H3, etc.
+}
+
 // ManualSection represents a section of the manual
 type ManualSection struct {
-	Title   string
-	ID      string
-	Content string
-	Level   int
+	Title       string
+	ID          string
+	Content     string
+	Level       int
+	SubHeadings []SubHeading
 }
 
 // ManualConfig defines which files to include
@@ -41,20 +63,31 @@ type ManualConfig struct {
 	Version  string
 	Date     string
 	Author   string
+	Header   string // PDF 헤더 텍스트
+	Footer   string // PDF 푸터 텍스트
 	Sections []ManualSection
 }
 
 func main() {
 	inputDir := flag.String("i", "", "Input directory containing markdown files")
 	outputFile := flag.String("o", "", "Output HTML file path")
-	title := flag.String("title", "TSGroup Code Signing Service", "Main title (service name)")
-	subtitle := flag.String("subtitle", "", "Subtitle (document type, e.g. 사용자 매뉴얼)")
-	version := flag.String("version", "0.3.0", "Document version")
-	author := flag.String("author", "", "Author/Company name (optional)")
+
+	// GNU 스타일: -c / --config
+	var configFile string
+	flag.StringVar(&configFile, "c", "", "Config file path (AUTHORS.yml)")
+	flag.StringVar(&configFile, "config", "", "Config file path (AUTHORS.yml)")
+
+	title := flag.String("title", "", "Main title (overrides config)")
+	subtitle := flag.String("subtitle", "", "Subtitle (overrides config)")
+	version := flag.String("version", "", "Document version")
+	author := flag.String("author", "", "Author/Company name (overrides config)")
+	header := flag.String("header", "", "Header text for printed pages (overrides config)")
+	footer := flag.String("footer", "", "Footer text for printed pages (overrides config)")
+
 	var templateName string
-	flag.StringVar(&templateName, "template", "default", "Template name (see available templates below)")
+	flag.StringVar(&templateName, "template", "default", "Template name")
 	flag.StringVar(&templateName, "t", "default", "Template name (shorthand)")
-	embedImgs := flag.Bool("embed", true, "Embed images as Base64 (default: true)")
+	embedImgs := flag.Bool("embed", true, "Embed images as Base64")
 
 	showVersion := flag.Bool("v", false, "Show version")
 
@@ -67,6 +100,58 @@ func main() {
 	}
 
 	flag.Parse()
+
+	// 설정 파일에서 값 로드
+	var cfg AuthorsConfig
+	if configFile != "" {
+		data, err := os.ReadFile(configFile)
+		if err != nil {
+			fmt.Printf("[WARN] Config file not found: %s\n", configFile)
+		} else {
+			if err := yaml.Unmarshal(data, &cfg); err != nil {
+				fmt.Printf("[WARN] Failed to parse config file: %v\n", err)
+			} else {
+				fmt.Printf("[INFO] Loaded config: %s\n", configFile)
+			}
+		}
+	}
+
+	// 설정 파일 값을 기본값으로 사용, CLI 플래그로 오버라이드
+	finalTitle := cfg.Document.Title
+	if *title != "" {
+		finalTitle = *title
+	}
+	if finalTitle == "" {
+		finalTitle = cfg.ProjectName
+	}
+	if finalTitle == "" {
+		finalTitle = "Document"
+	}
+
+	finalSubtitle := cfg.Document.Subtitle
+	if *subtitle != "" {
+		finalSubtitle = *subtitle
+	}
+
+	finalAuthor := cfg.Organization
+	if *author != "" {
+		finalAuthor = *author
+	}
+
+	finalHeader := cfg.Document.Header
+	if *header != "" {
+		finalHeader = *header
+	}
+
+	finalFooter := cfg.Document.Footer
+	if *footer != "" {
+		finalFooter = *footer
+	}
+
+	finalVersion := *version
+	if finalVersion == "" {
+		finalVersion = "1.0.0"
+	}
 
 	if *showVersion {
 		fmt.Printf("md2html v%s (%s)\n", BuildVersion, BuildTime)
@@ -155,26 +240,31 @@ func main() {
 		titleText, level := extractTitle(string(content))
 		id := generateID(file)
 
+		// Extract sub-headings for hierarchical TOC
+		subHeadings := extractSubHeadings(htmlContent)
+
 		// Merge content if level is 2 (H2) and there is a previous section
 		if level == 2 && len(sections) > 0 {
 			lastIdx := len(sections) - 1
 			// Append content to previous section with a separator line
 			sections[lastIdx].Content += fmt.Sprintf("\n<div id=\"%s\"></div>\n%s", id, htmlContent)
+			// Also merge sub-headings
+			sections[lastIdx].SubHeadings = append(sections[lastIdx].SubHeadings, subHeadings...)
 			fmt.Printf("[INFO] Merged %s into previous section '%s'\n", file, sections[lastIdx].Title)
 			continue
 		}
 
 		sections = append(sections, ManualSection{
-			Title:   titleText,
-			ID:      id,
-			Content: htmlContent,
-			Level:   level,
+			Title:       titleText,
+			ID:          id,
+			Content:     htmlContent,
+			Level:       level,
+			SubHeadings: subHeadings,
 		})
 	}
 
 	// Generate HTML
-	// Generate HTML
-	htmlContent, err := generateHTML(*title, *subtitle, *version, *author, templateName, sections)
+	htmlContent, err := generateHTML(finalTitle, finalSubtitle, finalVersion, finalAuthor, finalHeader, finalFooter, templateName, sections)
 	if err != nil {
 		fmt.Printf("[ERROR] Failed to generate HTML: %v\n", err)
 		os.Exit(1)
@@ -260,6 +350,33 @@ func generateID(filePath string) string {
 	base = strings.TrimSuffix(base, ".md")
 	base = strings.ReplaceAll(base, " ", "-")
 	return strings.ToLower(base)
+}
+
+// extractSubHeadings extracts H2 headings from HTML content for hierarchical TOC
+// H3 is excluded (2-level TOC), and Q. prefixed FAQ items are also excluded
+func extractSubHeadings(htmlContent string) []SubHeading {
+	var subHeadings []SubHeading
+
+	// Pattern to match <h2 id="...">...</h2> only (H3 excluded for cleaner TOC)
+	re := regexp.MustCompile(`<h2\s+id="([^"]+)"[^>]*>([^<]+)</h2>`)
+	matches := re.FindAllStringSubmatch(htmlContent, -1)
+
+	for _, match := range matches {
+		if len(match) >= 3 {
+			title := strings.TrimSpace(match[2])
+			// "Q."로 시작하는 FAQ 항목은 목차에서 제외
+			if strings.HasPrefix(title, "Q.") || strings.HasPrefix(title, "Q ") {
+				continue
+			}
+			subHeadings = append(subHeadings, SubHeading{
+				Title: title,
+				ID:    match[1],
+				Level: 2,
+			})
+		}
+	}
+
+	return subHeadings
 }
 
 // convertMermaidBlocks converts <pre><code class="language-mermaid"> to <div class="mermaid">
@@ -460,7 +577,7 @@ func rewriteAssetPaths(html string) string {
 //go:embed templates/*.html
 var templateFS embed.FS
 
-func generateHTML(title, subtitle, version, author, templateName string, sections []ManualSection) (string, error) {
+func generateHTML(title, subtitle, version, author, header, footer, templateName string, sections []ManualSection) (string, error) {
 	filename := "templates/layout.html"
 	if templateName != "default" && templateName != "" {
 		filename = fmt.Sprintf("templates/layout_%s.html", templateName)
@@ -486,6 +603,19 @@ func generateHTML(title, subtitle, version, author, templateName string, section
 		return "", err
 	}
 
+	// 기본값 설정: 헤더가 비어있으면 "Title - Subtitle" 형식 사용
+	if header == "" {
+		if subtitle != "" {
+			header = title + " - " + subtitle
+		} else {
+			header = title
+		}
+	}
+	// 푸터가 비어있으면 Author 사용
+	if footer == "" {
+		footer = author
+	}
+
 	var buf bytes.Buffer
 	data := ManualConfig{
 		Title:    title,
@@ -493,6 +623,8 @@ func generateHTML(title, subtitle, version, author, templateName string, section
 		Version:  version,
 		Date:     findDate(),
 		Author:   author,
+		Header:   header,
+		Footer:   footer,
 		Sections: sections,
 	}
 

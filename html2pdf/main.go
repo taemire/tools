@@ -25,6 +25,12 @@ func main() {
 	output := flag.String("o", "", "Output PDF file path (default: same as input with .pdf)")
 	landscape := flag.Bool("landscape", false, "Use landscape orientation")
 	showVersion := flag.Bool("v", false, "Show version")
+
+	// 헤더/푸터 관련 옵션
+	displayHeaderFooter := flag.Bool("hf", false, "Display header and footer")
+	headerTemplate := flag.String("header", "", "Custom header HTML template")
+	footerTemplate := flag.String("footer", "", "Custom footer HTML template")
+
 	flag.Parse()
 
 	if *showVersion {
@@ -33,13 +39,23 @@ func main() {
 	}
 
 	if *input == "" {
-		fmt.Println("Usage: html2pdf -i input.html [-o output.pdf] [--landscape]")
+		fmt.Println("Usage: html2pdf -i input.html [-o output.pdf] [options]")
 		fmt.Println()
 		fmt.Println("Options:")
 		fmt.Println("  -i string      Input HTML file path (required)")
 		fmt.Println("  -o string      Output PDF file path (default: input.pdf)")
 		fmt.Println("  --landscape    Use landscape orientation")
+		fmt.Println("  -hf            Display header and footer with page numbers")
+		fmt.Println("  -header string Custom header HTML template")
+		fmt.Println("  -footer string Custom footer HTML template")
 		fmt.Println("  -v             Show version")
+		fmt.Println()
+		fmt.Println("Template placeholders (use CSS classes in span):")
+		fmt.Println("  <span class=\"date\"></span>       - Current date")
+		fmt.Println("  <span class=\"title\"></span>      - Document title")
+		fmt.Println("  <span class=\"url\"></span>        - Document URL")
+		fmt.Println("  <span class=\"pageNumber\"></span> - Current page number")
+		fmt.Println("  <span class=\"totalPages\"></span> - Total pages")
 		os.Exit(1)
 	}
 
@@ -84,6 +100,33 @@ func main() {
 
 	if *landscape {
 		printParams = printParams.WithLandscape(true)
+	}
+
+	// 헤더/푸터 설정
+	if *displayHeaderFooter {
+		printParams = printParams.WithDisplayHeaderFooter(true)
+
+		// 기본 헤더 템플릿 (비어있으면 공백)
+		defaultHeader := `<div style="font-size: 9px; color: #666; width: 100%; text-align: center; padding: 5px 0;"></div>`
+		if *headerTemplate != "" {
+			defaultHeader = *headerTemplate
+		}
+
+		// 기본 푸터 템플릿 (페이지 번호 중앙 정렬)
+		defaultFooter := `<div style="font-size: 9px; color: #666; width: 100%; text-align: center; padding: 5px 0;">
+			<span class="pageNumber"></span> / <span class="totalPages"></span>
+		</div>`
+		if *footerTemplate != "" {
+			defaultFooter = *footerTemplate
+		}
+
+		printParams = printParams.
+			WithHeaderTemplate(defaultHeader).
+			WithFooterTemplate(defaultFooter).
+			WithMarginTop(0.6).   // 헤더 공간 확보 (인치)
+			WithMarginBottom(0.6) // 푸터 공간 확보 (인치)
+
+		fmt.Println("[INFO] Header/Footer enabled")
 	}
 
 	var pdfBuf []byte

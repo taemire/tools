@@ -30,6 +30,7 @@ if not exist "%TOOL_DIR%\html2pdf.exe" call :build_html2pdf
 :: 2. Parse Arguments
 set INPUT_PATH=
 set OUTPUT_PATH=
+set CONFIG_FILE=
 set TITLE=
 set SUBTITLE=
 set DOC_VERSION=
@@ -40,6 +41,8 @@ set TEMPLATE=report
 if "%~1"=="" goto :check_args
 if /i "%~1"=="-i" set INPUT_PATH=%~2& shift& shift& goto :parse_args
 if /i "%~1"=="-o" set OUTPUT_PATH=%~2& shift& shift& goto :parse_args
+if /i "%~1"=="-c" set "CONFIG_FILE=%~2"& shift& shift& goto :parse_args
+if /i "%~1"=="--config" set "CONFIG_FILE=%~2"& shift& shift& goto :parse_args
 if /i "%~1"=="-title" set "TITLE=%~2"& shift& shift& goto :parse_args
 if /i "%~1"=="-subtitle" set "SUBTITLE=%~2"& shift& shift& goto :parse_args
 if /i "%~1"=="-version" set "DOC_VERSION=%~2"& shift& shift& goto :parse_args
@@ -99,6 +102,7 @@ echo   - Input: !INPUT_PATH!
 echo   - Output: !HTML_OUT!
 
 set MD2HTML_CMD="%TOOL_DIR%\md2html.exe" -i "!INPUT_PATH!" -o "!HTML_OUT!" -template "!TEMPLATE!"
+if defined CONFIG_FILE set MD2HTML_CMD=!MD2HTML_CMD! -c "!CONFIG_FILE!"
 if defined TITLE set MD2HTML_CMD=!MD2HTML_CMD! -title "!TITLE!"
 if defined SUBTITLE set MD2HTML_CMD=!MD2HTML_CMD! -subtitle "!SUBTITLE!"
 if defined DOC_VERSION set MD2HTML_CMD=!MD2HTML_CMD! -version "!DOC_VERSION!"

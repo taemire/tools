@@ -62,6 +62,19 @@
             .no-print {
                 display: none;
             }
+
+            /* 이미지, 테이블, UI 목업 페이지 잘림 방지 */
+            img,
+            table,
+            .mermaid,
+            .ui-auth-card,
+            .ui-admin-card,
+            .ui-modal-mock-container,
+            .ui-dropdown-mock,
+            .ui-mockup-wrapper,
+            .alert {
+                page-break-inside: avoid;
+            }
         }
 
         /* Headers & Footers (Simulated for Web) */
@@ -181,6 +194,25 @@
             font-size: 0.8rem;
             color: var(--accent);
             margin-left: 5px;
+        }
+
+        /* 계층적 TOC 서브 아이템 스타일 */
+        .toc-sub-item {
+            padding-left: 20px;
+        }
+
+        .toc-sub-item .toc-title {
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+
+        .toc-sub-item-l3 {
+            padding-left: 40px;
+        }
+
+        .toc-sub-item-l3 .toc-title {
+            font-size: 0.85rem;
+            color: var(--muted);
         }
 
         /* Content Styles */
@@ -714,6 +746,13 @@
                 <span class="toc-dots"></span>
                 <a href="#{{$s.ID}}"><i class="fas fa-arrow-right toc-link-icon"></i></a>
             </li>
+            {{range $j, $sub := $s.SubHeadings}}
+            <li class="toc-item toc-sub-item{{if eq $sub.Level 3}} toc-sub-item-l3{{end}}">
+                <span class="toc-title"><a href="#{{$sub.ID}}">{{$sub.Title}}</a></span>
+                <span class="toc-dots"></span>
+                <a href="#{{$sub.ID}}"><i class="fas fa-arrow-right toc-link-icon"></i></a>
+            </li>
+            {{end}}
             {{end}}
         </ul>
         <div class="report-footer"><span>© {{if .Author}}{{.Author}}{{else}}TSGroup{{end}}</span></div>
