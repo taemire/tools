@@ -155,41 +155,20 @@
             text-decoration: underline;
         }
 
-        /* 목차 페이지 번호 */
-        .toc-page {
-            margin-left: auto;
-            color: #64748b;
-            font-size: 14px;
-            min-width: 30px;
-            text-align: right;
-        }
-
-        .toc-page::before {
-            content: '';
-            flex: 1;
-            border-bottom: 1px dotted #cbd5e1;
-            margin: 0 10px;
-        }
-
+        /* TOC 리스트 스타일 */
         .toc li {
-            display: flex;
-            align-items: baseline;
-        }
-
-        .toc li::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px dotted #cbd5e1;
-            margin: 0 10px 5px 10px;
-            order: 1;
+            display: block;
+            margin: 12px 0;
         }
 
         .toc a {
-            order: 0;
+            color: #0056b3;
+            text-decoration: none;
+            font-weight: 500;
         }
 
-        .toc-page {
-            order: 2;
+        .toc a:hover {
+            text-decoration: underline;
         }
 
         /* 계층적 TOC 서브 아이템 */
@@ -816,11 +795,10 @@
                 <h2>📋 목차</h2>
                 <ul>
                     {{range $i, $s := .Sections}}
-                    <li><a href="#{{$s.ID}}">{{$s.Title}}</a><span class="toc-page" data-target="{{$s.ID}}"></span></li>
+                    <li><a href="#{{$s.ID}}">{{$s.Title}}</a></li>
                     {{range $j, $sub := $s.SubHeadings}}
                     <li class="toc-sub{{if eq $sub.Level 3}} toc-sub-l3{{end}}"><a
-                            href="#{{$sub.ID}}">{{$sub.Title}}</a><span class="toc-page"
-                            data-target="{{$sub.ID}}"></span></li>
+                            href="#{{$sub.ID}}">{{$sub.Title}}</a></li>
                     {{end}}
                     {{end}}
                 </ul>
@@ -834,35 +812,10 @@
             {{end}}
         </div>
     </div>
-
     <!-- Mermaid.js -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script>
         mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
-
-        // 목차 페이지 번호 계산 (A4 기준)
-        document.addEventListener('DOMContentLoaded', function () {
-            // A4 페이지 높이 (96dpi 기준, 여백 제외 약 1000px)
-            const PAGE_HEIGHT = 1000;
-            // 페이지 오프셋: 표지는 0, 목차부터 1페이지 시작
-            const PAGE_OFFSET = 1;
-
-            const tocPages = document.querySelectorAll('.toc-page');
-            tocPages.forEach(span => {
-                const targetId = span.dataset.target;
-                const target = document.getElementById(targetId);
-                if (target) {
-                    // 요소의 문서 내 절대 위치
-                    const rect = target.getBoundingClientRect();
-                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                    const absoluteTop = rect.top + scrollTop;
-
-                    // 페이지 번호 계산
-                    const pageNum = Math.floor(absoluteTop / PAGE_HEIGHT) + PAGE_OFFSET;
-                    span.textContent = pageNum;
-                }
-            });
-        });
     </script>
 
 </body>
