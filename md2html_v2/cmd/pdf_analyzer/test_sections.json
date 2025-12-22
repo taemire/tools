@@ -1,0 +1,22 @@
+[
+    {
+        "id": "intro",
+        "title": "소개"
+    },
+    {
+        "id": "install",
+        "title": "1. 설치 및 설정"
+    },
+    {
+        "id": "usage",
+        "title": "2. 기본 사용법"
+    },
+    {
+        "id": "commands",
+        "title": "3. 주요 명령어"
+    },
+    {
+        "id": "troubleshooting",
+        "title": "8. 문제 해결"
+    }
+]

@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} v{{.Version}}</title>
+    <!-- Pretendard Font -->
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Base Reset */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            color: #333;
+            background: #525659;
+        }
+
+        /* Container for Web View */
+        .document-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 40px auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- Cover Styles (Provided by User) --- */
+        .cover-page {
+            width: 210mm;
+            height: 297mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 40px;
+            box-sizing: border-box;
+            border-top: 15px solid #0056b3;
+            background: linear-gradient(135deg, #ffffff 0%, #f4f7f9 100%);
+            page-break-after: always;
+            position: relative;
+        }
+
+        .header {
+            text-align: right;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0056b3;
+        }
+
+        .main-content {
+            margin-top: 100px;
+        }
+
+        .manual-badge {
+            font-size: 24px;
+            font-weight: 700;
+            color: #666;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .category {
+            font-size: 18px;
+            color: #666;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .title {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1.2;
+            color: #1a1a1a;
+            word-break: keep-all;
+            margin-bottom: 20px;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: #444;
+            border-left: 4px solid #0056b3;
+            padding-left: 15px;
+        }
+
+        .version {
+            font-size: 16px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .footer {
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 15px;
+            font-size: 14px;
+            color: #777;
+        }
+
+        .info-table td {
+            padding: 5px 0;
+            padding-right: 20px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .info-text {
+            font-size: 14px;
+            color: #777;
+            margin: 5px 0;
+        }
+
+        /* --------------------------------------- */
+
+        /* --- Content Layout (TOC & Body) --- */
+        .content-page {
+            padding: 40px 60px;
+            background: white;
+        }
+
+        /* TOC */
+        .toc {
+            background: #f8fafc;
+            padding: 30px 40px;
+            border-radius: 12px;
+            margin: 40px 0;
+            page-break-after: always;
+        }
+
+        .toc h2 {
+            color: #0056b3;
+            border: none;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .toc ul,
+        .toc ol {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .toc li {
+            margin: 12px 0;
+            display: flex;
+            align-items: baseline;
+        }
+
+        .toc a {
+            color: #0056b3;
+            text-decoration: none;
+            font-weight: 500;
+            flex: 0 0 auto;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        /* TOC 리스트 스타일 */
+        .toc li {
+            display: flex;
+            align-items: baseline;
+            margin: 12px 0;
+        }
+
+        .toc a {
+            color: #0056b3;
+            text-decoration: none;
+            font-weight: 500;
+            flex: 0 0 auto;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        /* TOC 점선과 페이지 번호 */
+        .toc-dots {
+            flex: 1;
+            border-bottom: 1px dotted #cbd5e1;
+            margin: 0 10px 5px 10px;
+        }
+
+        .toc-page {
+            color: #0056b3;
+            font-weight: 600;
+            font-size: 14px;
+            min-width: 30px;
+            text-align: right;
+        }
+
+        /* 계층적 TOC 서브 아이템 */
+        .toc-sub {
+            margin-left: 20px;
+            font-size: 14px;
+        }
+
+        .toc-sub-l3 {
+            margin-left: 40px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 28px;
+            color: #0056b3;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+            margin-top: 50px;
+        }
+
+        h2 {
+            font-size: 22px;
+            color: #334155;
+            margin-top: 40px;
+            border-left: 4px solid #0056b3;
+            padding-left: 16px;
+        }
+
+        h3 {
+            font-size: 18px;
+            color: #475569;
+            margin-top: 30px;
+        }
+
+        p {
+            line-height: 1.8;
+            margin: 1em 0;
+        }
+
+        /* Code */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #be185d;
+        }
+
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        pre code {
+            background: none;
+            color: #e2e8f0;
+            padding: 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            text-align: left;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        td {
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        /* Alerts */
+        blockquote {
+            background: #eff6ff;
+            border-left: 4px solid #0056b3;
+            padding: 16px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        /* Mermaid */
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        /* Docsify Alerts */
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+        }
+
+        .alert-icon {
+            flex: 0 0 24px;
+            margin-right: 12px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert p {
+            margin: 0;
+        }
+
+        .alert strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* Important (!>) */
+        .alert-important {
+            background-color: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-important .alert-icon {
+            color: #ef4444;
+        }
+
+        /* Tip (?>) */
+        .alert-tip {
+            background-color: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .alert-tip .alert-icon {
+            color: #3b82f6;
+        }
+
+        .alert-title {
+            font-weight: 800;
+            font-size: 1rem;
+            margin-bottom: 6px;
+        }
+
+        .alert-body {
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* Print Settings */
+        @page {
+            size: A4;
+            margin: 15mm;
+
+            @top-center {
+                content: "{{.Header}}";
+                font-size: 9pt;
+                color: #64748b;
+            }
+
+            @bottom-left {
+                content: "{{.Footer}}";
+                font-size: 9pt;
+                color: #94a3b8;
+            }
+
+            @bottom-right {
+                content: counter(page);
+                font-size: 10pt;
+                color: #64748b;
+            }
+        }
+
+        /* 표지 페이지: 여백 0, 헤더/푸터 숨김, 카운터 0으로 시작 */
+        @page :first {
+            margin: 0;
+            counter-reset: page 0;
+
+            @top-center {
+                content: none;
+            }
+
+            @bottom-left {
+                content: none;
+            }
+
+            @bottom-right {
+                content: none;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .document-container {
+                width: 100%;
+                margin: 0;
+                box-shadow: none;
+            }
+
+            .cover-page {
+                page-break-after: always;
+                width: 100%;
+                height: 100vh;
+            }
+
+            .content-page {
+                padding: 0;
+            }
+
+            .section {
+                page-break-before: always;
+            }
+
+            .section:first-of-type {
+                page-break-before: auto;
+            }
+
+            img,
+            table,
+            .mermaid {
+                page-break-inside: avoid;
+            }
+
+            /* UI 목업 및 Alert 박스 페이지 잘림 방지 */
+            .ui-auth-card,
+            .ui-admin-card,
+            .ui-modal-mock-container,
+            .ui-dropdown-mock,
+            .ui-mockup-wrapper,
+            .alert {
+                page-break-inside: avoid;
+            }
+
+            pre {
+                page-break-inside: auto;
+            }
+        }
+
+        /* UI Mockup Design System */
+        .ui-auth-card,
+        .ui-auth-card *,
+        .ui-modal-mock-container,
+        .ui-modal-mock-container *,
+        .ui-menu-bar-mock,
+        .ui-menu-bar-mock *,
+        .ui-admin-card,
+        .ui-admin-card *,
+        .ui-dropdown-mock,
+        .ui-dropdown-mock * {
+            box-sizing: border-box !important;
+        }
+
+        :root {
+            --ui-accent-blue: #1D9BF0;
+            --ui-accent-blue-hover: #1A8CD8;
+            --ui-accent-green: #00BA7C;
+            --ui-accent-red: #F4212E;
+            --ui-text-primary: #0F1419;
+            --ui-text-secondary: #536471;
+            --ui-bg-primary: #FFFFFF;
+            --ui-bg-secondary: #F7F9F9;
+            --ui-border-color: #EFF3F4;
+        }
+
+        .ui-btn-inline {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--ui-accent-blue);
+            color: white !important;
+            border-radius: 9999px;
+            padding: 2px 12px;
+            font-size: 0.85em;
+            font-weight: 700;
+            vertical-align: middle;
+            margin: 0 4px;
+            line-height: 1.2;
+            text-decoration: none !important;
+        }
+
+        .ui-btn-inline.success {
+            background: var(--ui-accent-green);
+        }
+
+        [data-theme="dark"],
+        .dark-theme,
+        body[data-theme="dark"] {
+            --ui-bg-primary: #16181C;
+            --ui-bg-secondary: #000000;
+            --ui-border-color: #2F3336;
+            --ui-text-primary: #E7E9EA;
+        }
+
+        .ui-btn-mock {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1;
+            border: none;
+            cursor: default;
+            user-select: none;
+            vertical-align: middle;
+            margin: 0 2px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            text-decoration: none !important;
+        }
+
+        .ui-btn-primary {
+            background: var(--ui-accent-blue);
+            color: #FFFFFF !important;
+        }
+
+        .ui-btn-success {
+            background: var(--ui-accent-green);
+            color: #FFFFFF !important;
+        }
+
+        .ui-auth-card {
+            width: 420px;
+            background: var(--ui-bg-primary);
+            border: 1px solid var(--ui-border-color);
+            border-radius: 16px;
+            padding: 32px 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .ui-brand-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--ui-accent-blue);
+            margin-bottom: 8px;
+        }
+
+        .ui-auth-header h1 {
+            font-size: 1.25rem !important;
+            font-weight: 700 !important;
+            border: none !important;
+            margin: 0 !important;
+        }
+
+        .ui-input {
+            width: 100%;
+            padding: 8px 14px;
+            border: 1px solid var(--ui-border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: var(--ui-bg-primary);
+        }
+
+        .ui-btn-auth {
+            width: 100%;
+            padding: 10px;
+            background: var(--ui-accent-blue);
+            color: white;
+            border: none;
+            border-radius: 9999px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .ui-password-strength {
+            width: 100%;
+            height: 4px;
+            background: var(--ui-border-color);
+            border-radius: 2px;
+            margin-top: 6px;
+        }
+
+        .ui-strength-bar {
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .ui-strength-bar.weak {
+            width: 25%;
+            background: var(--ui-accent-red);
+        }
+
+        .ui-strength-bar.fair {
+            width: 50%;
+            background: #FFC107;
+        }
+
+        .ui-strength-bar.good {
+            width: 75%;
+            background: var(--ui-accent-blue);
+        }
+
+        .ui-strength-bar.strong {
+            width: 100%;
+            background: var(--ui-accent-green);
+        }
+
+        .ui-admin-card {
+            background: var(--ui-bg-primary);
+            border: 1px solid var(--ui-border-color);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 800px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .ui-admin-header {
+            background: var(--ui-bg-secondary);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--ui-border-color);
+        }
+
+        .ui-admin-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.25rem;
+            font-weight: 800;
+        }
+
+        .ui-admin-section {
+            padding: 20px;
+            border-bottom: 1px solid var(--ui-border-color);
+        }
+
+        .ui-section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ui-badge-count {
+            background: var(--ui-accent-blue);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+        }
+
+        /* UI Mockup Design System - Premium Upgrade */
+        .ui-mockup-container {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 24px;
+            margin: 20px 0;
+            border: 1px solid #e2e8f0;
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        .ui-mockup-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .ui-mockup-header i {
+            font-size: 24px;
+            color: #1e293b;
+        }
+
+        .ui-mockup-header h3 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 800;
+            color: #1e293b;
+            border: none;
+            padding: 0;
+        }
+
+        .ui-user-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .ui-user-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            transition: transform 0.2s;
+        }
+
+        .ui-user-left {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .ui-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 800;
+            color: #475569;
+        }
+
+        .ui-avatar.admin {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+
+        .ui-avatar.signer {
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .ui-avatar.viewer {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        .ui-user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .ui-user-name {
+            font-size: 18px;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 2px;
+        }
+
+        .ui-badge-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .ui-badge {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            height: 22px;
+        }
+
+        /* Roles */
+        .badge-role-admin {
+            background: #f5f3ff;
+            color: #7c3aed;
+            border: 1px solid #ddd6fe;
+        }
+
+        .badge-role-signer {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+        }
+
+        .badge-role-viewer {
+            background: #f8fafc;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Status */
+        .badge-status-active {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .badge-status-locked {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .ui-user-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .ui-action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            color: #94a3b8;
+            cursor: default;
+        }
+
+        .ui-action-btn:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+            color: #64748b;
+        }
+
+        .ui-action-btn i.fa-gear {
+            color: #a78bfa;
+        }
+
+        .ui-action-btn i.fa-key {
+            color: #fbbf24;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="document-container">
+        <!-- Cover -->
+        <div class="cover-page">
+            <div class="manual-badge">{{if .Subtitle}}{{.Subtitle}}{{else}}User Manual{{end}}</div>
+
+            <div class="main-content">
+                <div class="title">{{.Title}}</div>
+                <div class="version">Version {{.Version}}</div>
+            </div>
+
+            <div class="footer">
+                <div class="info-text">Date: {{.Date}}</div>
+                {{if .Author}}
+                <div class="info-text">Author: {{.Author}}</div>
+                {{end}}
+
+                <div class="copyright">
+                    © {{if .Date}}{{slice .Date 0 4}}{{else}}2025{{end}} {{if .Copyright}}{{.Copyright}}{{else}}INCA
+                    Internet Co., Ltd.{{end}}. All rights reserved.
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-page">
+            <!-- TOC -->
+            <div class="toc">
+                <h2>📋 목차</h2>
+                <ul>
+                    {{range $i, $s := .Sections}}
+                    <li>
+                        <a href="#{{$s.ID}}">{{$s.Title}}</a>
+                        {{if gt $s.PageNumber 0}}<span class="toc-dots"></span><span
+                            class="toc-page">{{$s.PageNumber}}</span>{{end}}
+                    </li>
+                    {{range $j, $sub := $s.SubHeadings}}
+                    <li class="toc-sub{{if eq $sub.Level 3}} toc-sub-l3{{end}}">
+                        <a href="#{{$sub.ID}}">{{$sub.Title}}</a>
+                        {{if gt $sub.PageNumber 0}}<span class="toc-dots"></span><span
+                            class="toc-page">{{$sub.PageNumber}}</span>{{end}}
+                    </li>
+                    {{end}}
+                    {{end}}
+                </ul>
+            </div>
+
+            <!-- Sections -->
+            {{range $i, $s := .Sections}}
+            <div class="section" id="{{$s.ID}}">
+                {{$s.Content}}
+            </div>
+            {{end}}
+        </div>
+    </div>
+    <!-- Mermaid.js -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+    </script>
+
+</body>
+
+</html>

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"encoding/base64"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"mime"
@@ -30,6 +31,7 @@ type AuthorsConfig struct {
 	Document     struct {
 		Title    string `yaml:"title"`
 		Subtitle string `yaml:"subtitle"`
+		Author   string `yaml:"author"`
 		Header   string `yaml:"header"`
 		Footer   string `yaml:"footer"`
 	} `yaml:"document"`
@@ -42,30 +44,33 @@ var (
 
 // SubHeading represents a sub-heading within a section (H2, H3, etc.)
 type SubHeading struct {
-	Title string
-	ID    string
-	Level int // 2 for H2, 3 for H3, etc.
+	Title      string `json:"title"`
+	ID         string `json:"id"`
+	Level      int    `json:"level"`          // 2 for H2, 3 for H3, etc.
+	PageNumber int    `json:"page,omitempty"` // 2-Pass에서 사용
 }
 
 // ManualSection represents a section of the manual
 type ManualSection struct {
-	Title       string
-	ID          string
-	Content     string
-	Level       int
-	SubHeadings []SubHeading
+	Title       string       `json:"title"`
+	ID          string       `json:"id"`
+	Content     string       `json:"-"` // JSON에서 제외 (너무 큼)
+	Level       int          `json:"level"`
+	SubHeadings []SubHeading `json:"subheadings,omitempty"`
+	PageNumber  int          `json:"page,omitempty"` // 2-Pass에서 사용
 }
 
 // ManualConfig defines which files to include
 type ManualConfig struct {
-	Title    string
-	Subtitle string
-	Version  string
-	Date     string
-	Author   string
-	Header   string // PDF 헤더 텍스트
-	Footer   string // PDF 푸터 텍스트
-	Sections []ManualSection
+	Title     string
+	Subtitle  string
+	Version   string
+	Date      string
+	Author    string
+	Header    string // PDF 헤더 텍스트
+	Footer    string // PDF 푸터 텍스트
+	Copyright string
+	Sections  []ManualSection
 }
 
 func main() {
@@ -88,6 +93,10 @@ func main() {
 	flag.StringVar(&templateName, "template", "default", "Template name")
 	flag.StringVar(&templateName, "t", "default", "Template name (shorthand)")
 	embedImgs := flag.Bool("embed", true, "Embed images as Base64")
+
+	// 2-Pass PDF 생성 옵션
+	sectionsJSONOut := flag.String("sections-json", "", "Output sections list as JSON (for 2-pass PDF)")
+	pagesJSONIn := flag.String("pages-json", "", "Input page numbers JSON (from PDF analyzer)")
 
 	showVersion := flag.Bool("v", false, "Show version")
 
@@ -133,7 +142,11 @@ func main() {
 		finalSubtitle = *subtitle
 	}
 
-	finalAuthor := cfg.Organization
+	// Author: document.author 우선, 없으면 organization 사용
+	finalAuthor := cfg.Document.Author
+	if finalAuthor == "" {
+		finalAuthor = cfg.Organization
+	}
 	if *author != "" {
 		finalAuthor = *author
 	}
@@ -146,6 +159,11 @@ func main() {
 	finalFooter := cfg.Document.Footer
 	if *footer != "" {
 		finalFooter = *footer
+	}
+
+	finalCopyright := cfg.Copyright
+	if finalCopyright == "" {
+		finalCopyright = cfg.Organization
 	}
 
 	finalVersion := *version
@@ -263,8 +281,63 @@ func main() {
 		})
 	}
 
+	// 섹션 목록을 JSON으로 출력 (2-Pass의 1단계)
+	if *sectionsJSONOut != "" {
+		jsonData, err := json.MarshalIndent(sections, "", "  ")
+		if err != nil {
+			fmt.Printf("[ERROR] Failed to marshal sections: %v\n", err)
+			os.Exit(1)
+		}
+		if err := os.WriteFile(*sectionsJSONOut, jsonData, 0644); err != nil {
+			fmt.Printf("[ERROR] Failed to write sections JSON: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("[INFO] Sections JSON saved: %s\n", *sectionsJSONOut)
+	}
+
+	// 페이지 번호 JSON 읽기 (2-Pass의 2단계)
+	if *pagesJSONIn != "" {
+		type PageInfo struct {
+			ID   string `json:"id"`
+			Page int    `json:"page"`
+		}
+		type PagesData struct {
+			Sections []PageInfo `json:"sections"`
+		}
+
+		jsonData, err := os.ReadFile(*pagesJSONIn)
+		if err != nil {
+			fmt.Printf("[WARN] Could not read pages JSON: %v\n", err)
+		} else {
+			var pagesData PagesData
+			if err := json.Unmarshal(jsonData, &pagesData); err != nil {
+				fmt.Printf("[WARN] Could not parse pages JSON: %v\n", err)
+			} else {
+				// 페이지 번호를 섹션에 적용
+				pageMap := make(map[string]int)
+				for _, p := range pagesData.Sections {
+					pageMap[p.ID] = p.Page
+				}
+				for i := range sections {
+					if page, ok := pageMap[sections[i].ID]; ok {
+						sections[i].PageNumber = page
+						fmt.Printf("[INFO] Section '%s' -> page %d\n", sections[i].Title, page)
+					}
+
+					// 서브헤딩에도 페이지 번호 적용
+					for j := range sections[i].SubHeadings {
+						if page, ok := pageMap[sections[i].SubHeadings[j].ID]; ok {
+							sections[i].SubHeadings[j].PageNumber = page
+							fmt.Printf("[INFO]   SubHeading '%s' -> page %d\n", sections[i].SubHeadings[j].Title, page)
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Generate HTML
-	htmlContent, err := generateHTML(finalTitle, finalSubtitle, finalVersion, finalAuthor, finalHeader, finalFooter, templateName, sections)
+	htmlContent, err := generateHTML(finalTitle, finalSubtitle, finalVersion, finalAuthor, finalHeader, finalFooter, finalCopyright, templateName, sections)
 	if err != nil {
 		fmt.Printf("[ERROR] Failed to generate HTML: %v\n", err)
 		os.Exit(1)
@@ -583,7 +656,7 @@ func rewriteAssetPaths(html string) string {
 //go:embed templates/*.html
 var templateFS embed.FS
 
-func generateHTML(title, subtitle, version, author, header, footer, templateName string, sections []ManualSection) (string, error) {
+func generateHTML(title, subtitle, version, author, header, footer, copyright, templateName string, sections []ManualSection) (string, error) {
 	filename := "templates/layout.html"
 	if templateName != "default" && templateName != "" {
 		filename = fmt.Sprintf("templates/layout_%s.html", templateName)
@@ -597,8 +670,11 @@ func generateHTML(title, subtitle, version, author, header, footer, templateName
 	funcMap := template.FuncMap{
 		"inc": func(i int) int { return i + 1 },
 		"slice": func(s string, start, end int) string {
-			if len(s) < end {
+			if len(s) < start {
 				return s
+			}
+			if len(s) < end {
+				return s[start:]
 			}
 			return s[start:end]
 		},
@@ -624,14 +700,15 @@ func generateHTML(title, subtitle, version, author, header, footer, templateName
 
 	var buf bytes.Buffer
 	data := ManualConfig{
-		Title:    title,
-		Subtitle: subtitle,
-		Version:  version,
-		Date:     findDate(),
-		Author:   author,
-		Header:   header,
-		Footer:   footer,
-		Sections: sections,
+		Title:     title,
+		Subtitle:  subtitle,
+		Version:   version,
+		Date:      findDate(),
+		Author:    author,
+		Header:    header,
+		Footer:    footer,
+		Copyright: copyright,
+		Sections:  sections,
 	}
 
 	if err := t.Execute(&buf, data); err != nil {

@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.Subtitle}}</title>
+    <link href="https://cdn.jsdelivr.net/npm/inter-ui@3.19.3/inter.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #09090b;
+            --muted: #71717a;
+            --border: #e4e4e7;
+            --accent: #2563eb;
+            --page-width: 210mm;
+            --page-height: 297mm;
+        }
+
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+            color: var(--primary);
+            background-color: #f4f4f5;
+            /* Web View Background */
+        }
+
+        /* Page Container */
+        .page {
+            width: var(--page-width);
+            min-height: var(--page-height);
+            margin: 10mm auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            box-sizing: border-box;
+            padding: 25mm 20mm;
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media print {
+            body {
+                background: none;
+            }
+
+            .page {
+                margin: 0;
+                box-shadow: none;
+                width: 100%;
+                min-height: auto;
+                page-break-after: always;
+            }
+
+            .no-print {
+                display: none;
+            }
+
+            /* 이미지, 테이블, UI 목업 페이지 잘림 방지 */
+            img,
+            table,
+            .mermaid,
+            .ui-auth-card,
+            .ui-admin-card,
+            .ui-modal-mock-container,
+            .ui-dropdown-mock,
+            .ui-mockup-wrapper,
+            .alert {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Headers & Footers (Simulated for Web) */
+        .report-header {
+            position: absolute;
+            top: 10mm;
+            left: 20mm;
+            right: 20mm;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+        }
+
+        .report-footer {
+            position: absolute;
+            bottom: 10mm;
+            left: 20mm;
+            right: 20mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--muted);
+            border-top: 1px solid var(--border);
+            padding-top: 5px;
+        }
+
+        /* 1. Cover (Page 1) */
+        .cover {
+            justify-content: center;
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .cover-tag {
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .cover h1 {
+            font-size: 3.5rem;
+            line-height: 1.1;
+            letter-spacing: -2px;
+            margin: 0;
+            color: var(--primary);
+        }
+
+        .cover .subtitle {
+            font-size: 1.5rem;
+            color: var(--muted);
+            margin-top: 15px;
+            font-weight: 300;
+        }
+
+        .cover-info {
+            margin-top: auto;
+            width: 100%;
+        }
+
+        .cover-info p {
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        .copyright-big {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 20px;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        /* 2. TOC (Page 2) */
+        .toc-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 40px;
+        }
+
+        .toc-item {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 12px;
+        }
+
+        .toc-title {
+            font-weight: 500;
+            font-size: 1rem;
+            flex: 0 0 auto;
+            max-width: 85%;
+        }
+
+        .toc-title a {
+            text-decoration: none;
+            color: var(--primary);
+            transition: color 0.2s;
+        }
+
+        .toc-title a:hover {
+            color: var(--accent);
+        }
+
+        .toc-dots {
+            flex: 1;
+            border-bottom: 1px dotted var(--border);
+            margin: 0 10px;
+        }
+
+        .toc-link-icon {
+            font-size: 0.8rem;
+            color: var(--accent);
+            margin-left: 5px;
+        }
+
+        /* 계층적 TOC 서브 아이템 스타일 */
+        .toc-sub-item {
+            padding-left: 20px;
+        }
+
+        .toc-sub-item .toc-title {
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+
+        .toc-sub-item-l3 {
+            padding-left: 40px;
+        }
+
+        .toc-sub-item-l3 .toc-title {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        /* Content Styles */
+        .section-title {
+            font-size: 2rem;
+            letter-spacing: -1px;
+            margin-bottom: 30px;
+            margin-top: 0;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+        }
+
+        .content-body {
+            line-height: 1.7;
+            font-size: 1rem;
+            color: #3f3f46;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-top: 40px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-top: 35px;
+            border-left: 4px solid var(--accent);
+            padding-left: 15px;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            color: #4b5563;
+            margin-top: 30px;
+        }
+
+        h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 25px;
+        }
+
+        p {
+            margin-bottom: 1.2em;
+        }
+
+        img {
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin: 20px 0;
+        }
+
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #e11d48;
+            font-size: 0.9em;
+        }
+
+        strong code,
+        b code {
+            font-weight: 700;
+            /* Inherit standard code colors to look like standard Markdown */
+            color: #e11d48;
+            background: #f1f5f9;
+        }
+
+        pre {
+            background: #18181b;
+            color: #f4f4f5;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+
+        th {
+            text-align: left;
+            background: #f8fafc;
+            padding: 12px;
+            font-size: 0.85rem;
+            border-bottom: 2px solid var(--primary);
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+            vertical-align: top;
+        }
+
+        blockquote {
+            border-left: 4px solid var(--accent);
+            background: #f8fafc;
+            margin: 20px 0;
+            padding: 15px 20px;
+            color: #4b5563;
+        }
+
+
+        /* Mermaid */
+        .mermaid {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        /* Docsify Alerts */
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+        }
+
+        .alert-icon {
+            flex: 0 0 24px;
+            margin-right: 12px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert p {
+            margin: 0;
+        }
+
+        .alert strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* Important (!>) */
+        .alert-important {
+            background-color: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-important .alert-icon {
+            color: #ef4444;
+        }
+
+        /* Tip (?>) */
+        .alert-tip {
+            background-color: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .alert-tip .alert-icon {
+            color: #3b82f6;
+        }
+
+        .alert-title {
+            font-weight: 800;
+            font-size: 1rem;
+            margin-bottom: 6px;
+        }
+
+        .alert-body {
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* UI Mockup Design System */
+        .ui-auth-card,
+        .ui-auth-card *,
+        .ui-modal-mock-container,
+        .ui-modal-mock-container *,
+        .ui-menu-bar-mock,
+        .ui-menu-bar-mock *,
+        .ui-admin-card,
+        .ui-admin-card *,
+        .ui-dropdown-mock,
+        .ui-dropdown-mock * {
+            box-sizing: border-box !important;
+        }
+
+        :root {
+            --ui-accent-blue: #1D9BF0;
+            --ui-accent-blue-hover: #1A8CD8;
+            --ui-accent-green: #00BA7C;
+            --ui-accent-red: #F4212E;
+            --ui-text-primary: #0F1419;
+            --ui-text-secondary: #536471;
+            --ui-bg-primary: #FFFFFF;
+            --ui-bg-secondary: #F7F9F9;
+            --ui-border-color: #EFF3F4;
+        }
+
+        .ui-btn-inline {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--ui-accent-blue);
+            color: white !important;
+            border-radius: 9999px;
+            padding: 2px 12px;
+            font-size: 0.85em;
+            font-weight: 700;
+            vertical-align: middle;
+            margin: 0 4px;
+            line-height: 1.2;
+            text-decoration: none !important;
+        }
+
+        .ui-btn-inline.success {
+            background: var(--ui-accent-green);
+        }
+
+        [data-theme="dark"],
+        .dark-theme,
+        body[data-theme="dark"] {
+            --ui-bg-primary: #16181C;
+            --ui-bg-secondary: #000000;
+            --ui-border-color: #2F3336;
+            --ui-text-primary: #E7E9EA;
+        }
+
+        .ui-btn-mock {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1;
+            border: none;
+            cursor: default;
+            user-select: none;
+            vertical-align: middle;
+            margin: 0 2px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            text-decoration: none !important;
+        }
+
+        .ui-btn-primary {
+            background: var(--ui-accent-blue);
+            color: #FFFFFF !important;
+        }
+
+        .ui-btn-success {
+            background: var(--ui-accent-green);
+            color: #FFFFFF !important;
+        }
+
+        .ui-auth-card {
+            width: 420px;
+            background: var(--ui-bg-primary);
+            border: 1px solid var(--ui-border-color);
+            border-radius: 16px;
+            padding: 32px 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .ui-brand-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--ui-accent-blue);
+            margin-bottom: 8px;
+        }
+
+        .ui-auth-header h1 {
+            font-size: 1.25rem !important;
+            font-weight: 700 !important;
+            border: none !important;
+            margin: 0 !important;
+        }
+
+        .ui-input {
+            width: 100%;
+            padding: 8px 14px;
+            border: 1px solid var(--ui-border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: var(--ui-bg-primary);
+        }
+
+        .ui-btn-auth {
+            width: 100%;
+            padding: 10px;
+            background: var(--ui-accent-blue);
+            color: white;
+            border: none;
+            border-radius: 9999px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .ui-password-strength {
+            width: 100%;
+            height: 4px;
+            background: var(--ui-border-color);
+            border-radius: 2px;
+            margin-top: 6px;
+        }
+
+        .ui-strength-bar {
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .ui-strength-bar.weak {
+            width: 25%;
+            background: var(--ui-accent-red);
+        }
+
+        .ui-strength-bar.fair {
+            width: 50%;
+            background: #FFC107;
+        }
+
+        .ui-strength-bar.good {
+            width: 75%;
+            background: var(--ui-accent-blue);
+        }
+
+        .ui-strength-bar.strong {
+            width: 100%;
+            background: var(--ui-accent-green);
+        }
+
+        .ui-admin-card {
+            background: var(--ui-bg-primary);
+            border: 1px solid var(--ui-border-color);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 800px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .ui-admin-header {
+            background: var(--ui-bg-secondary);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--ui-border-color);
+        }
+
+        .ui-admin-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.25rem;
+            font-weight: 800;
+        }
+
+        .ui-admin-section {
+            padding: 20px;
+            border-bottom: 1px solid var(--ui-border-color);
+        }
+
+        .ui-section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ui-badge-count {
+            background: var(--ui-accent-blue);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+        }
+
+        .ui-user-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .ui-user-card {
+            background: var(--ui-bg-secondary);
+            border: 1px solid var(--ui-border-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ui-user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .ui-user-name {
+            font-weight: 700;
+            color: var(--ui-text-primary);
+        }
+
+        .ui-user-email {
+            font-size: 0.85rem;
+            color: var(--ui-text-secondary);
+        }
+
+        .ui-status-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .ui-status-pending {
+            background: #FFD700;
+            color: #000;
+        }
+
+        .ui-status-active {
+            background: var(--ui-accent-green);
+        }
+
+        .ui-status-locked {
+            background: var(--ui-accent-red);
+        }
+
+        .ui-role-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .ui-role-admin {
+            background: #8B5CF6;
+        }
+
+        .ui-role-user {
+            background: #9CA3AF;
+        }
+
+        .ui-btn-admin {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 6px;
+            border: none;
+        }
+
+        .ui-btn-approve {
+            background: var(--ui-accent-blue);
+            color: #fff;
+        }
+
+        .ui-btn-delete {
+            background: transparent;
+            border: 1px solid var(--ui-border-color);
+            color: var(--ui-text-primary);
+        }
+
+        .ui-btn-disable {
+            background: var(--ui-accent-red);
+            color: #fff;
+        }
+
+        .ui-btn-unlock {
+            background: #F59E0B;
+            color: #fff;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- 1. Cover Page -->
+    <div class="page cover">
+        <div class="cover-tag">{{if .Subtitle}}{{.Subtitle}}{{else}}DOCUMENTATION{{end}}</div>
+        <h1>{{.Title}}</h1>
+        <p class="subtitle">Version {{.Version}}</p>
+
+        <div class="cover-info">
+            <p><strong>Date:</strong> {{.Date}}</p>
+            {{if .Author}}<p><strong>Author:</strong> {{.Author}}</p>{{end}}
+            <div class="copyright-big">
+                © {{if .Date}}{{slice .Date 0 4}}{{else}}2025{{end}} {{if .Author}}{{.Author}}{{else}}TSGroup{{end}}.
+                All rights reserved.
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. TOC Page -->
+    <div class="page">
+        <div class="report-header"><span>{{.Title}}</span><span>TABLE OF CONTENTS</span></div>
+        <h2 class="section-title">목차</h2>
+        <ul class="toc-list">
+            {{range $i, $s := .Sections}}
+            <li class="toc-item">
+                <span class="toc-title"><a href="#{{$s.ID}}">{{$s.Title}}</a></span>
+                <span class="toc-dots"></span>
+                <a href="#{{$s.ID}}"><i class="fas fa-arrow-right toc-link-icon"></i></a>
+            </li>
+            {{range $j, $sub := $s.SubHeadings}}
+            <li class="toc-item toc-sub-item{{if eq $sub.Level 3}} toc-sub-item-l3{{end}}">
+                <span class="toc-title"><a href="#{{$sub.ID}}">{{$sub.Title}}</a></span>
+                <span class="toc-dots"></span>
+                <a href="#{{$sub.ID}}"><i class="fas fa-arrow-right toc-link-icon"></i></a>
+            </li>
+            {{end}}
+            {{end}}
+        </ul>
+        <div class="report-footer"><span>© {{if .Author}}{{.Author}}{{else}}TSGroup{{end}}</span></div>
+    </div>
+
+    <!-- 3. Content Pages -->
+    <!-- Note: In HTML, infinite scroll is preferred. 
+         We wrap each section in a 'page' styled container, but allow content to overflow if needed.
+         or we can just put all sections in a continuous flow and let print css handle page breaks.
+         Here, we create a new 'page' visual block for each major section to look like a report. -->
+
+    {{range $i, $s := .Sections}}
+    <div class="page" id="{{$s.ID}}">
+        <div class="report-header"><span>{{$.Title}}</span><span>{{$s.Title}}</span></div>
+
+        <!-- H1 removed to avoid duplication if markdown already contains it -->
+
+        <div class="content-body">
+            {{$s.Content}}
+        </div>
+
+        <div class="report-footer"><span>© {{if
+                $.Author}}{{$.Author}}{{else}}TSGroup{{end}}</span><span>{{$.Version}}</span></div>
+    </div>
+    {{end}}
+
+    <!-- Mermaid Support -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+
+        // Modern Alert Styling Script
+        document.addEventListener("DOMContentLoaded", function () {
+            const alerts = document.querySelectorAll('.alert-content p');
+            alerts.forEach(p => {
+                // Check if p starts with a strong tag followed by a colon
+                // Structure: <strong>Title</strong>: Content
+                // We want to transform it to:
+                // <div class="alert-title">Title</div>
+                // <div class="alert-body">Content</div>
+
+                const html = p.innerHTML.trim();
+                // Regex to find <strong>Text</strong>: or <strong>Text</strong> :
+                // We use a non-greedy capture for the title content inside strong
+                const match = html.match(/^<strong>(.*?)<\/strong>\s*:\s*(.*)/s);
+
+                if (match) {
+                    const titleText = match[1];
+                    const bodyText = match[2];
+
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'alert-title';
+                    titleDiv.innerHTML = titleText;
+
+                    const bodyDiv = document.createElement('div');
+                    bodyDiv.className = 'alert-body';
+                    bodyDiv.innerHTML = bodyText;
+
+                    const container = p.parentElement;
+                    container.innerHTML = ''; // Clear p
+                    container.appendChild(titleDiv);
+                    container.appendChild(bodyDiv);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

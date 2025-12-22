@@ -1,0 +1,17 @@
+# github.com/ledongthuc/pdf v0.0.0-20240201131950-da5b75280b06
+## explicit
+github.com/ledongthuc/pdf
+# github.com/yuin/goldmark v1.6.0
+## explicit; go 1.18
+github.com/yuin/goldmark
+github.com/yuin/goldmark/ast
+github.com/yuin/goldmark/extension
+github.com/yuin/goldmark/extension/ast
+github.com/yuin/goldmark/parser
+github.com/yuin/goldmark/renderer
+github.com/yuin/goldmark/renderer/html
+github.com/yuin/goldmark/text
+github.com/yuin/goldmark/util
+# gopkg.in/yaml.v3 v3.0.1
+## explicit
+gopkg.in/yaml.v3

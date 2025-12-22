@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} v{{.Version}}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.8;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 60px;
+            color: #1a1a2e;
+            background: #fff;
+        }
+
+        /* Cover */
+        .cover {
+            text-align: center;
+            padding: 120px 0;
+            border-bottom: 3px solid #3b82f6;
+            margin-bottom: 60px;
+            page-break-after: always;
+        }
+
+        .cover h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        .cover .subtitle {
+            font-size: 28px;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 30px;
+        }
+
+        .cover .version {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            color: white;
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-size: 18px;
+        }
+
+        .cover .date {
+            margin-top: 40px;
+            color: #94a3b8;
+        }
+
+        .cover .company {
+            margin-top: 80px;
+            color: #475569;
+            font-size: 18px;
+        }
+
+        /* TOC */
+        .toc {
+            background: #f8fafc;
+            padding: 30px 40px;
+            border-radius: 12px;
+            margin: 40px 0;
+            page-break-after: always;
+        }
+
+        .toc h2 {
+            color: #1e40af;
+            border: none;
+            margin-bottom: 20px;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .toc li {
+            margin: 12px 0;
+        }
+
+        .toc a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        /* Headings */
+        h1 {
+            font-size: 28px;
+            color: #1e40af;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+            margin-top: 50px;
+        }
+
+        h2 {
+            font-size: 22px;
+            color: #334155;
+            margin-top: 40px;
+            border-left: 4px solid #3b82f6;
+            padding-left: 16px;
+        }
+
+        h3 {
+            font-size: 18px;
+            color: #475569;
+            margin-top: 30px;
+        }
+
+        /* Code */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #be185d;
+        }
+
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            word-break: break-all;
+        }
+
+        pre code {
+            background: none;
+            color: #e2e8f0;
+            padding: 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            text-align: left;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        td {
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        /* Alerts */
+        blockquote {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 16px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        /* Mermaid diagrams */
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        /* Print */
+        @media print {
+            @page {
+                size: A4;
+                margin: 20mm 15mm 25mm 15mm;
+
+                @bottom-center {
+                    content: "{{.Title}} v{{.Version}}";
+                    font-size: 9pt;
+                    color: #94a3b8;
+                }
+
+                @bottom-right {
+                    content: counter(page);
+                    font-size: 10pt;
+                    color: #64748b;
+                }
+            }
+
+            @page :first {
+                @bottom-center {
+                    content: none;
+                }
+
+                @bottom-right {
+                    content: none;
+                }
+            }
+
+            body {
+                padding: 0;
+                font-size: 11pt;
+            }
+
+            .cover {
+                page-break-after: always;
+            }
+
+            h1,
+            h2,
+            h3,
+            h4 {
+                page-break-after: avoid;
+                page-break-inside: avoid;
+            }
+
+            h1+*,
+            h2+*,
+            h3+*,
+            h4+* {
+                page-break-before: avoid;
+            }
+
+            pre,
+            table,
+            img,
+            .mermaid {
+                page-break-inside: avoid;
+            }
+
+            p,
+            li {
+                orphans: 3;
+                widows: 3;
+            }
+
+            .footer {
+                display: none;
+            }
+        }
+
+        /* Section divider */
+        .section {
+            page-break-before: always;
+        }
+
+        .section:first-of-type {
+            page-break-before: auto;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Cover -->
+    <div class="cover">
+        <h1>{{.Title}}</h1>
+        {{if .Subtitle}}<p class="subtitle">{{.Subtitle}}</p>{{end}}
+        <span class="version">Version {{.Version}}</span>
+        <p class="date">발행일: {{.Date}}</p>
+        {{if .Author}}<p class="company">{{.Author}}</p>{{end}}
+    </div>
+
+    <!-- TOC -->
+    <div class="toc">
+        <h2>📋 목차</h2>
+        <ul>
+            {{range $i, $s := .Sections}}
+            <li><a href="#{{$s.ID}}">{{inc $i}}. {{$s.Title}}</a></li>
+            {{end}}
+        </ul>
+    </div>
+
+    <!-- Content -->
+    {{range $i, $s := .Sections}}
+    <div class="section" id="{{$s.ID}}">
+        {{$s.Content}}
+    </div>
+    {{end}}
+
+    <div class="footer">
+        <p>© 2025 Code Signing Service. All Rights Reserved.</p>
+        <p>Document Version: {{.Version}}</p>
+    </div>
+
+    <!-- Mermaid.js for diagram rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+    </script>
+
+</body>
+
+</html>
