@@ -1,0 +1,4348 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSGroup Code Signing Service - </title>
+    <link href="https://cdn.jsdelivr.net/npm/inter-ui@3.19.3/inter.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #09090b;
+            --muted: #71717a;
+            --border: #e4e4e7;
+            --accent: #2563eb;
+            --page-width: 210mm;
+            --page-height: 297mm;
+        }
+
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+            color: var(--primary);
+            background-color: #f4f4f5;
+            /* Web View Background */
+        }
+
+        /* Page Container */
+        .page {
+            width: var(--page-width);
+            min-height: var(--page-height);
+            margin: 10mm auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            box-sizing: border-box;
+            padding: 25mm 20mm;
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media print {
+            body {
+                background: none;
+            }
+
+            .page {
+                margin: 0;
+                box-shadow: none;
+                width: 100%;
+                min-height: auto;
+                page-break-after: always;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+
+        /* Headers & Footers (Simulated for Web) */
+        .report-header {
+            position: absolute;
+            top: 10mm;
+            left: 20mm;
+            right: 20mm;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+        }
+
+        .report-footer {
+            position: absolute;
+            bottom: 10mm;
+            left: 20mm;
+            right: 20mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--muted);
+            border-top: 1px solid var(--border);
+            padding-top: 5px;
+        }
+
+        /* 1. Cover (Page 1) */
+        .cover {
+            justify-content: center;
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .cover-tag {
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .cover h1 {
+            font-size: 3.5rem;
+            line-height: 1.1;
+            letter-spacing: -2px;
+            margin: 0;
+            color: var(--primary);
+        }
+
+        .cover .subtitle {
+            font-size: 1.5rem;
+            color: var(--muted);
+            margin-top: 15px;
+            font-weight: 300;
+        }
+
+        .cover-info {
+            margin-top: auto;
+            width: 100%;
+        }
+
+        .cover-info p {
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        .copyright-big {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 20px;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        /* 2. TOC (Page 2) */
+        .toc-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 40px;
+        }
+
+        .toc-item {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 12px;
+        }
+
+        .toc-title {
+            font-weight: 500;
+            font-size: 1rem;
+            flex: 0 0 auto;
+            max-width: 85%;
+        }
+
+        .toc-title a {
+            text-decoration: none;
+            color: var(--primary);
+            transition: color 0.2s;
+        }
+
+        .toc-title a:hover {
+            color: var(--accent);
+        }
+
+        .toc-dots {
+            flex: 1;
+            border-bottom: 1px dotted var(--border);
+            margin: 0 10px;
+        }
+
+        .toc-link-icon {
+            font-size: 0.8rem;
+            color: var(--accent);
+            margin-left: 5px;
+        }
+
+        /* Content Styles */
+        .section-title {
+            font-size: 2rem;
+            letter-spacing: -1px;
+            margin-bottom: 30px;
+            margin-top: 0;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+        }
+
+        .content-body {
+            line-height: 1.7;
+            font-size: 1rem;
+            color: #3f3f46;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-top: 40px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-top: 35px;
+            border-left: 4px solid var(--accent);
+            padding-left: 15px;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            color: #4b5563;
+            margin-top: 30px;
+        }
+
+        h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 25px;
+        }
+
+        p {
+            margin-bottom: 1.2em;
+        }
+
+        img {
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin: 20px 0;
+        }
+
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #e11d48;
+            font-size: 0.9em;
+        }
+
+        strong code,
+        b code {
+            font-weight: 700;
+            /* Inherit standard code colors to look like standard Markdown */
+            color: #e11d48;
+            background: #f1f5f9;
+        }
+
+        pre {
+            background: #18181b;
+            color: #f4f4f5;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+
+        th {
+            text-align: left;
+            background: #f8fafc;
+            padding: 12px;
+            font-size: 0.85rem;
+            border-bottom: 2px solid var(--primary);
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+            vertical-align: top;
+        }
+
+        blockquote {
+            border-left: 4px solid var(--accent);
+            background: #f8fafc;
+            margin: 20px 0;
+            padding: 15px 20px;
+            color: #4b5563;
+        }
+
+        /* Docsify Alerts (Modern Icon Style) */
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: row;
+            /* Horizontal layout for icon + content */
+            align-items: flex-start;
+        }
+
+        .alert-icon {
+            flex: 0 0 24px;
+            margin-right: 12px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+            /* Align with first line of text */
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert p {
+            margin: 0;
+        }
+
+        .alert strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* Important (!>) */
+        .alert-important {
+            background-color: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-important .alert-icon {
+            color: #ef4444;
+        }
+
+        /* Stronger Bold Text */
+        strong,
+        b {
+            font-weight: 700;
+            color: #0f172a;
+            /* Slate 900 - High contrast */
+        }
+
+        /* Modern Title/Body split styles (injected by JS) */
+        .alert-title {
+            font-weight: 800;
+            font-size: 1rem;
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
+        }
+
+        .alert-body {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #334155;
+            /* Slate 700 */
+        }
+
+        /* Tip (?>) */
+        .alert-tip {
+            background-color: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .alert-tip .alert-icon {
+            color: #3b82f6;
+        }
+
+        /* Mermaid */
+        .mermaid {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        /* UI Mockup Design System */
+        .ui-auth-card,
+        .ui-auth-card *,
+        .ui-modal-mock-container,
+        .ui-modal-mock-container *,
+        .ui-menu-bar-mock,
+        .ui-menu-bar-mock *,
+        .ui-admin-card,
+        .ui-admin-card *,
+        .ui-dropdown-mock,
+        .ui-dropdown-mock * {
+            box-sizing: border-box !important;
+        }
+
+        :root {
+            --ui-accent-blue: #1D9BF0;
+            --ui-accent-blue-hover: #1A8CD8;
+            --ui-accent-green: #00BA7C;
+            --ui-accent-red: #F4212E;
+            --ui-text-primary: #0F1419;
+            --ui-text-secondary: #536471;
+            --ui-bg-primary: #FFFFFF;
+            --ui-bg-secondary: #F7F9F9;
+            --ui-border-color: #EFF3F4;
+        }
+
+        .ui-btn-inline {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--ui-accent-blue);
+            color: white !important;
+            border-radius: 9999px;
+            padding: 2px 12px;
+            font-size: 0.85em;
+            font-weight: 700;
+            vertical-align: middle;
+            margin: 0 4px;
+            line-height: 1.2;
+            text-decoration: none !important;
+        }
+
+        .ui-btn-inline.success {
+            background: var(--ui-accent-green);
+        }
+
+        [data-theme="dark"],
+        .dark-theme,
+        body[data-theme="dark"] {
+            --ui-bg-primary: #16181C;
+            --ui-bg-secondary: #000000;
+            --ui-border-color: #2F3336;
+            --ui-text-primary: #E7E9EA;
+        }
+
+        .ui-btn-mock {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1;
+            border: none;
+            cursor: default;
+            user-select: none;
+            vertical-align: middle;
+            margin: 0 2px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            text-decoration: none !important;
+        }
+
+        .ui-btn-primary {
+            background: var(--ui-accent-blue);
+            color: #FFFFFF !important;
+        }
+
+        .ui-btn-success {
+            background: var(--ui-accent-green);
+            color: #FFFFFF !important;
+        }
+
+        .ui-auth-card {
+            width: 420px;
+            background: var(--ui-bg-primary);
+            border: 1px solid var(--ui-border-color);
+            border-radius: 16px;
+            padding: 32px 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .ui-brand-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--ui-accent-blue);
+            margin-bottom: 8px;
+        }
+
+        .ui-auth-header h1 {
+            font-size: 1.25rem !important;
+            font-weight: 700 !important;
+            border: none !important;
+            margin: 0 !important;
+        }
+
+        .ui-input {
+            width: 100%;
+            padding: 8px 14px;
+            border: 1px solid var(--ui-border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: var(--ui-bg-primary);
+        }
+
+        .ui-btn-auth {
+            width: 100%;
+            padding: 10px;
+            background: var(--ui-accent-blue);
+            color: white;
+            border: none;
+            border-radius: 9999px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .ui-password-strength {
+            width: 100%;
+            height: 4px;
+            background: var(--ui-border-color);
+            border-radius: 2px;
+            margin-top: 6px;
+        }
+
+        .ui-strength-bar {
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .ui-strength-bar.weak {
+            width: 25%;
+            background: var(--ui-accent-red);
+        }
+
+        .ui-strength-bar.fair {
+            width: 50%;
+            background: #FFC107;
+        }
+
+        .ui-strength-bar.good {
+            width: 75%;
+            background: var(--ui-accent-blue);
+        }
+
+        .ui-strength-bar.strong {
+            width: 100%;
+            background: var(--ui-accent-green);
+        }
+
+        .ui-admin-card {
+            background: var(--ui-bg-primary);
+            border: 1px solid var(--ui-border-color);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 800px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .ui-admin-header {
+            background: var(--ui-bg-secondary);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--ui-border-color);
+        }
+
+        .ui-admin-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.25rem;
+            font-weight: 800;
+        }
+
+        .ui-admin-section {
+            padding: 20px;
+            border-bottom: 1px solid var(--ui-border-color);
+        }
+
+        .ui-section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ui-badge-count {
+            background: var(--ui-accent-blue);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+        }
+
+        .ui-user-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .ui-user-card {
+            background: var(--ui-bg-secondary);
+            border: 1px solid var(--ui-border-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ui-user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .ui-user-name {
+            font-weight: 700;
+            color: var(--ui-text-primary);
+        }
+
+        .ui-user-email {
+            font-size: 0.85rem;
+            color: var(--ui-text-secondary);
+        }
+
+        .ui-status-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .ui-status-pending {
+            background: #FFD700;
+            color: #000;
+        }
+
+        .ui-status-active {
+            background: var(--ui-accent-green);
+        }
+
+        .ui-status-locked {
+            background: var(--ui-accent-red);
+        }
+
+        .ui-role-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .ui-role-admin {
+            background: #8B5CF6;
+        }
+
+        .ui-role-user {
+            background: #9CA3AF;
+        }
+
+        .ui-btn-admin {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 6px;
+            border: none;
+        }
+
+        .ui-btn-approve {
+            background: var(--ui-accent-blue);
+            color: #fff;
+        }
+
+        .ui-btn-delete {
+            background: transparent;
+            border: 1px solid var(--ui-border-color);
+            color: var(--ui-text-primary);
+        }
+
+        .ui-btn-disable {
+            background: var(--ui-accent-red);
+            color: #fff;
+        }
+
+        .ui-btn-unlock {
+            background: #F59E0B;
+            color: #fff;
+        }
+
+        /* UI Mockup Container - Protects layout in docs */
+        .ui-mockup-container {
+            padding: 1rem 0 !important;
+            display: block !important;
+            width: fit-content !important;
+            max-width: 100% !important;
+        }
+
+        /* Admin Menu Dropdown Mockup (Bulletproof Version) */
+        .ui-dropdown-mock {
+            background: #16181C !important;
+            border: 1px solid #2F3336 !important;
+            border-radius: 12px !important;
+            width: 260px !important;
+            padding: 8px !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            margin: 10px 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+            backdrop-filter: blur(8px) !important;
+            position: relative !important;
+        }
+
+        .ui-dropdown-header {
+            padding: 12px 16px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            background: #1C1F23 !important;
+            border-bottom: 1px solid #2F3336 !important;
+            border-radius: 8px !important;
+            margin-bottom: 8px !important;
+        }
+
+        .ui-avatar-mock {
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 50% !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: #1D9BF0 !important;
+            flex-shrink: 0 !important;
+        }
+
+        .ui-dropdown-mock svg {
+            width: 18px !important;
+            height: 18px !important;
+            min-width: 18px !important;
+            min-height: 18px !important;
+            max-width: 20px !important;
+            max-height: 20px !important;
+            flex-shrink: 0 !important;
+            display: inline-block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            stroke-width: 2 !important;
+        }
+
+        .ui-avatar-mock svg {
+            width: 20px !important;
+            height: 20px !important;
+        }
+
+        .ui-user-details-mock {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            overflow: hidden !important;
+        }
+
+        .ui-username-mock {
+            color: #E7E9EA !important;
+            font-weight: 700 !important;
+            font-size: 0.95rem !important;
+            white-space: nowrap !important;
+            text-overflow: ellipsis !important;
+            overflow: hidden !important;
+            line-height: 1.2 !important;
+        }
+
+        .ui-role-tag-mock {
+            font-size: 11px !important;
+            color: #F4212E !important;
+            background: rgba(244, 33, 46, 0.1) !important;
+            border: 1px solid rgba(244, 33, 46, 0.4) !important;
+            padding: 1px 6px !important;
+            border-radius: 4px !important;
+            font-weight: 800 !important;
+            width: fit-content !important;
+            margin-top: 2px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.02em !important;
+        }
+
+        .ui-dropdown-item-mock {
+            padding: 10px 16px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            color: #E7E9EA !important;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            cursor: default !important;
+            border-radius: 8px !important;
+            transition: background-color 0.2s !important;
+            white-space: nowrap !important;
+            line-height: 1 !important;
+        }
+
+        .ui-dropdown-item-mock svg {
+            color: #71767B !important;
+        }
+
+        .ui-dropdown-item-mock.logout {
+            color: #F4212E !important;
+        }
+
+        .ui-dropdown-item-mock.logout svg {
+            color: #F4212E !important;
+        }
+
+        .ui-dropdown-divider {
+            height: 1px !important;
+            background: #2F3336 !important;
+            margin: 6px 0 !important;
+        }
+
+
+
+
+        /* Menu Bar Mock */
+        .ui-menu-bar-mock {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--ui-bg-secondary);
+            padding: 6px 14px;
+            border-radius: 9999px;
+            border: 1px solid var(--ui-border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            height: 48px;
+        }
+
+        .ui-menu-item-mock {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            color: #536471;
+        }
+
+        .ui-menu-item-mock.active {
+            color: var(--ui-accent-blue);
+            background: rgba(29, 155, 240, 0.1);
+        }
+
+        /* Generic Icon Mock */
+        .ui-icon-mock {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 32px !important;
+            height: 32px !important;
+            min-width: 32px !important;
+            min-height: 32px !important;
+            border-radius: 50% !important;
+            vertical-align: middle !important;
+            overflow: hidden !important;
+        }
+
+        .ui-icon-mock svg {
+            width: 20px !important;
+            height: 20px !important;
+            min-width: 20px !important;
+            min-height: 20px !important;
+            max-width: 20px !important;
+            max-height: 20px !important;
+            display: block !important;
+        }
+
+        .ui-icon-mock.large {
+            width: 64px !important;
+            height: 64px !important;
+            min-width: 64px !important;
+            min-height: 64px !important;
+        }
+
+        .ui-icon-mock.large svg {
+            width: 48px !important;
+            height: 48px !important;
+            min-width: 48px !important;
+            min-height: 48px !important;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- 1. Cover Page -->
+    <div class="page cover">
+        <div class="cover-tag">DOCUMENTATION</div>
+        <h1>TSGroup Code Signing Service</h1>
+        <p class="subtitle">Version 0.3.0</p>
+
+        <div class="cover-info">
+            <p><strong>Date:</strong> 2025년 12월 21일</p>
+            
+            <div class="copyright-big">
+                © 2025 TSGroup.
+                All rights reserved.
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. TOC Page -->
+    <div class="page">
+        <div class="report-header"><span>TSGroup Code Signing Service</span><span>TABLE OF CONTENTS</span></div>
+        <h2 class="section-title">목차</h2>
+        <ul class="toc-list">
+            
+            <li class="toc-item">
+                <span class="toc-title"><a href="#01-overview">1. 서비스 소개</a></span>
+                <span class="toc-dots"></span>
+                <a href="#01-overview"><i class="fas fa-arrow-right toc-link-icon"></i></a>
+            </li>
+            
+            <li class="toc-item">
+                <span class="toc-title"><a href="#01-login-and-account">2. 시작하기</a></span>
+                <span class="toc-dots"></span>
+                <a href="#01-login-and-account"><i class="fas fa-arrow-right toc-link-icon"></i></a>
+            </li>
+            
+            <li class="toc-item">
+                <span class="toc-title"><a href="#01-signing-guide">3. 주요 기능</a></span>
+                <span class="toc-dots"></span>
+                <a href="#01-signing-guide"><i class="fas fa-arrow-right toc-link-icon"></i></a>
+            </li>
+            
+            <li class="toc-item">
+                <span class="toc-title"><a href="#01-faq">4. 지원</a></span>
+                <span class="toc-dots"></span>
+                <a href="#01-faq"><i class="fas fa-arrow-right toc-link-icon"></i></a>
+            </li>
+            
+        </ul>
+        <div class="report-footer"><span>© TSGroup</span></div>
+    </div>
+
+    <!-- 3. Content Pages -->
+    <!-- Note: In HTML, infinite scroll is preferred. 
+         We wrap each section in a 'page' styled container, but allow content to overflow if needed.
+         or we can just put all sections in a continuous flow and let print css handle page breaks.
+         Here, we create a new 'page' visual block for each major section to look like a report. -->
+
+    
+    <div class="page" id="01-overview">
+        <div class="report-header"><span>TSGroup Code Signing Service</span><span>1. 서비스 소개</span></div>
+
+        <!-- H1 removed to avoid duplication if markdown already contains it -->
+
+        <div class="content-body">
+            <h1 id="1--">1. 서비스 소개</h1>
+<h2 id="--overview">서비스 개요 (Overview)</h2>
+<p><strong>Code Signing Service</strong>는 Windows 실행 파일(<code>.exe</code>, <code>.dll</code>, <code>.msi</code> 등)에 디지털 서명을 수행하여 소프트웨어의 무결성을 보장하고 게시자의 신원을 증명하는 웹 기반 솔루션입니다.</p>
+<div class="alert alert-important"><div class="alert-icon"><i class="fas fa-exclamation-circle"></i></div><div class="alert-content">
+<p><strong>중요</strong>: 이 서비스는 사내망 또는 안전한 네트워크 환경에서 운영되도록 설계되었습니다.</p>
+</div></div>
+<hr>
+<h2 id="11--">1.1 주요 기능</h2>
+<h3 id="111----">1.1.1 웹 기반 코드 서명</h3>
+<p>복잡한 명령줄 도구(<code>signtool.exe</code>)를 사용할 필요 없이, 웹 브라우저에서 파일을 <strong>드래그 앤 드롭</strong>하는 것만으로 서명을 완료할 수 있습니다.</p>
+<h3 id="112-opusinfo--">1.1.2 OpusInfo 완벽 지원</h3>
+<p>Microsoft Authenticode 서명 표준인 <strong>OpusInfo</strong>를 완벽하게 지원하여, 사용자에게 신뢰감을 주는 정보를 표시합니다.</p>
+<ul>
+<li><strong>프로그램 이름 (Description)</strong>: Windows UAC(사용자 계정 컨트롤) 창에 프로그램의 정확한 이름이 표시됩니다.</li>
+<li><strong>게시자 정보 (URL)</strong>: &quot;추가 정보&quot; 링크를 통해 게시자의 웹사이트로 연결됩니다.</li>
+</ul>
+<h3 id="113----">1.1.3 대용량 및 배치 처리</h3>
+<ul>
+<li>✅ 최대 <strong>5GB</strong> 대용량 파일 업로드 지원</li>
+<li>✅ 여러 파일을 한 번에 선택하여 서명하는 <strong>일괄 서명(Batch Signing)</strong></li>
+<li>✅ 서명된 파일들을 한 번에 <strong>ZIP 다운로드</strong></li>
+</ul>
+<h3 id="114--">1.1.4 강력한 보안</h3>
+<ul>
+<li>🔒 <strong>계정 잠금</strong>: 로그인 5회 실패 시 10분간 계정 잠금</li>
+<li>👮 <strong>권한 분리</strong>: 인증된 사용자만 서명 기능 접근 가능</li>
+<li>📝 <strong>기록 관리</strong>: 모든 서명 이력 로깅 및 감사 추적</li>
+</ul>
+<hr>
+<h2 id="12--">1.2 시스템 구조</h2>
+<p>사용자는 웹 브라우저만 있으면 언제 어디서나 서명 서비스를 이용할 수 있습니다. 아래 다이어그램은 전체 시스템 흐름을 보여줍니다.</p>
+<div class="mermaid">graph LR
+    User[👤 사용자] --&gt;|HTTPS| Web[🌐 웹 인터페이스]
+    Web --&gt;|Upload| Server[⚙️ 서명 서버]
+    Server --&gt;|Sign| Signtool[🔏 서명 엔진]
+    Signtool --&gt;|Timestamp| TSA[⏰ 타임스탬프 서버]
+    
+    style User fill:#f9f,stroke:#333
+    style Web fill:#bbf,stroke:#333
+    style Server fill:#dfd,stroke:#333
+    style Signtool fill:#ff9,stroke:#333
+</div>
+<hr>
+<h2 id="13-">1.3 시작하기</h2>
+<p>이 매뉴얼은 서비스를 처음 사용하는 분들을 위해 단계별로 구성되어 있습니다. 왼쪽 사이드바 메뉴를 통해 이동하거나 아래 링크를 클릭하세요.</p>
+<ul>
+<li><strong><a href="../2-getting-started/01-login-and-account.md">로그인 및 계정 가이드</a></strong>: 회원가입, 로그인, 비밀번호 변경 방법</li>
+<li><strong><a href="../3-features/01-signing-guide.md">파일 서명 가이드</a></strong>: 파일 업로드 및 서명 절차</li>
+</ul>
+
+        </div>
+
+        <div class="report-footer"><span>© TSGroup</span><span>0.3.0</span></div>
+    </div>
+    
+    <div class="page" id="01-login-and-account">
+        <div class="report-header"><span>TSGroup Code Signing Service</span><span>2. 시작하기</span></div>
+
+        <!-- H1 removed to avoid duplication if markdown already contains it -->
+
+        <div class="content-body">
+            <style>
+/* UI Mockup Styles for CodeSign Service User Manual */
+.ui-auth-card,
+.ui-auth-card *,
+.ui-modal-mock-container,
+.ui-modal-mock-container *,
+.ui-menu-bar-mock,
+.ui-menu-bar-mock *,
+.ui-admin-card,
+.ui-admin-card *,
+.ui-dropdown-mock,
+.ui-dropdown-mock * {
+    box-sizing: border-box !important;
+}
+
+:root {
+    --ui-accent-blue: #1D9BF0;
+    --ui-accent-blue-hover: #1A8CD8;
+    --ui-accent-green: #00BA7C;
+    --ui-accent-red: #F4212E;
+    --ui-text-primary: #0F1419;
+    --ui-text-secondary: #536471;
+    --ui-bg-primary: #FFFFFF;
+    --ui-bg-secondary: #F7F9F9;
+    --ui-border-color: #EFF3F4;
+}
+
+.ui-btn-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ui-accent-blue);
+    color: white !important;
+    border-radius: 9999px;
+    padding: 2px 12px;
+    font-size: 0.85em;
+    font-weight: 700;
+    vertical-align: middle;
+    margin: 0 4px;
+    line-height: 1.2;
+    text-decoration: none !important;
+}
+
+.ui-btn-inline.success {
+    background: var(--ui-accent-green);
+}
+
+/* Theme Awareness - Sync with Docsify or manual theme if implemented */
+[data-theme="dark"],
+.dark-theme,
+body[data-theme="dark"] {
+    --ui-bg-primary: #16181C;
+    --ui-bg-secondary: #000000;
+    --ui-border-color: #2F3336;
+    --ui-text-primary: #E7E9EA;
+}
+
+[data-theme="dark"] .ui-input,
+body[data-theme="dark"] .ui-input {
+    background: #16181C !important;
+    border-color: #2F3336 !important;
+    color: #E7E9EA !important;
+}
+
+[data-theme="dark"] .ui-auth-card,
+body[data-theme="dark"] .ui-auth-card {
+    background: #16181C !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .ui-auth-header p,
+body[data-theme="dark"] .ui-auth-header p,
+[data-theme="dark"] .ui-auth-footer,
+body[data-theme="dark"] .ui-auth-footer {
+    color: #71767B !important;
+}
+
+/* Button Mocks */
+.ui-btn-mock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    border: none;
+    cursor: default;
+    user-select: none;
+    vertical-align: middle;
+    margin: 0 2px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    text-decoration: none !important;
+}
+
+.ui-btn-primary {
+    background: var(--ui-accent-blue);
+    color: #FFFFFF !important;
+}
+
+.ui-btn-success {
+    background: var(--ui-accent-green);
+    color: #FFFFFF !important;
+}
+
+.ui-btn-mock svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* Icon Mocks (like menu-bar icons) */
+.ui-icon-mock {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    border-radius: 50% !important;
+    color: var(--ui-accent-blue) !important;
+    background: transparent !important;
+    vertical-align: middle !important;
+    transition: background-color 0.2s;
+    overflow: hidden !important;
+}
+
+.ui-icon-mock svg {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    display: block !important;
+}
+
+/* Large Icon version for standalone display */
+.ui-icon-mock.large {
+    width: 64px !important;
+    height: 64px !important;
+    min-width: 64px !important;
+    min-height: 64px !important;
+}
+
+.ui-icon-mock.large svg {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+}
+
+/* Hover effects (optional, for interactive manuals) */
+.ui-btn-mock:hover {
+    filter: brightness(0.9);
+}
+
+.ui-btn-auth:hover {
+    filter: brightness(0.9);
+}
+
+[data-theme="dark"] .ui-btn-auth[style*="background: #eff3f4"],
+body[data-theme="dark"] .ui-btn-auth[style*="background: #eff3f4"] {
+    background: #2F3336 !important;
+    color: #E7E9EA !important;
+}
+
+/* Authentication Card & Form Mockups */
+.ui-auth-mock-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+    background: var(--ui-bg-primary);
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.ui-auth-card {
+    width: 420px;
+    background: var(--ui-bg-primary);
+    border: 1px solid var(--ui-border-color);
+    border-radius: 16px;
+    padding: 32px 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.ui-auth-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.ui-brand-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--ui-accent-blue);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.ui-auth-header h1 {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    margin: 0 0 4px 0 !important;
+    color: var(--ui-text-primary) !important;
+    line-height: 1.4 !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+.ui-auth-header p {
+    color: #536471 !important;
+    font-size: 0.9rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.5 !important;
+}
+
+.ui-form-group {
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ui-form-group label {
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    color: var(--ui-text-primary) !important;
+    margin: 0 0 6px 0 !important;
+    display: block !important;
+}
+
+.ui-form-group .ui-input {
+    width: 100%;
+    padding: 8px 14px;
+    border: 1px solid var(--ui-border-color);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: var(--ui-bg-primary);
+    color: #0F1419;
+    pointer-events: none;
+}
+
+.ui-btn-auth {
+    width: 100%;
+    padding: 10px;
+    background: var(--ui-accent-blue);
+    color: white;
+    border: none;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-top: 4px;
+    text-align: center;
+}
+
+/* Password Strength Indicator Mockup */
+.ui-password-strength {
+    width: 100%;
+    height: 4px;
+    background: var(--ui-border-color);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 6px;
+}
+
+.ui-strength-bar {
+    height: 100%;
+    width: 0%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.ui-strength-bar.weak {
+    width: 25%;
+    background: var(--ui-accent-red);
+}
+
+.ui-strength-bar.fair {
+    width: 50%;
+    background: #FFC107;
+}
+
+.ui-strength-bar.good {
+    width: 75%;
+    background: var(--ui-accent-blue);
+}
+
+.ui-strength-bar.strong {
+    width: 100%;
+    background: var(--ui-accent-green);
+}
+
+.ui-form-hint {
+    font-size: 0.8rem;
+    color: var(--ui-text-secondary);
+    margin-top: 4px;
+}
+
+.ui-btn-success-auth {
+    background: var(--ui-accent-green);
+}
+
+.ui-auth-footer {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--ui-border-color);
+    font-size: 0.85rem;
+    color: #536471;
+}
+
+.ui-auth-footer .link {
+    color: var(--ui-accent-blue);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* Badge for success state */
+.ui-status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: rgba(0, 186, 124, 0.1);
+    color: var(--ui-accent-green);
+    margin: 8px 0;
+}
+
+[data-theme="dark"] .ui-status-badge,
+body[data-theme="dark"] .ui-status-badge {
+    background: rgba(0, 186, 124, 0.2);
+    color: #44cf96;
+}
+
+/* Dashboard Mockups */
+.ui-file-list-mock {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 24px;
+    background: var(--ui-bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--ui-border-color);
+}
+
+.ui-file-item-mock {
+    background: var(--ui-bg-primary);
+    border: 1px solid var(--ui-border-color);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.ui-file-info-mock {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ui-file-icon-mock {
+    width: 40px;
+    height: 40px;
+    background: var(--ui-accent-blue);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+.ui-file-details-mock h4 {
+    font-size: 0.95rem;
+    margin: 0;
+    font-weight: 700;
+    color: var(--ui-text-primary);
+}
+
+.ui-file-details-mock .ui-file-size {
+    font-size: 0.8rem;
+    color: #536471;
+}
+
+.ui-status-badge-mock {
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.ui-status-uploaded-mock {
+    background: rgba(29, 155, 240, 0.1);
+    color: var(--ui-accent-blue);
+}
+
+.ui-status-signed-mock {
+    background: rgba(0, 186, 124, 0.1);
+    color: var(--ui-accent-green);
+}
+
+.ui-file-actions-mock {
+    display: flex;
+    gap: 8px;
+}
+
+.ui-btn-tiny-mock {
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+/* Upload Drop Zone Mockup */
+.ui-drop-zone-mock {
+    background: var(--ui-bg-secondary);
+    border: 2px dashed var(--ui-border-color);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    cursor: default;
+    margin: 20px 0;
+}
+
+.ui-drop-zone-mock svg {
+    width: 48px;
+    height: 48px;
+    color: var(--ui-accent-blue);
+    margin-bottom: 12px;
+}
+
+.ui-drop-zone-mock h2 {
+    font-size: 1.1rem;
+    margin: 0 0 4px 0;
+    color: var(--ui-text-primary);
+}
+
+.ui-drop-zone-mock p {
+    font-size: 0.9rem;
+    color: #536471;
+    margin: 0;
+}
+
+/* Menu Bar Mockups */
+.ui-menu-bar-mock {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ui-bg-secondary);
+    padding: 6px 14px;
+    border-radius: 9999px;
+    border: 1px solid var(--ui-border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    height: 48px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.ui-menu-info-mock {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+    color: var(--ui-text-primary);
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.ui-menu-timer-mock {
+    font-family: 'Courier New', monospace;
+    background-color: var(--ui-bg-primary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--ui-border-color);
+    color: var(--ui-accent-blue);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.ui-menu-divider-mock {
+    width: 1px;
+    height: 20px;
+    background-color: var(--ui-border-color);
+    margin: 0 4px;
+}
+
+.ui-menu-item-mock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: #536471;
+    transition: all 0.2s;
+}
+
+.ui-menu-item-mock.active {
+    color: var(--ui-accent-blue);
+    background: rgba(29, 155, 240, 0.1);
+}
+
+.ui-menu-item-mock svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Download Modal Mockup */
+.ui-modal-mock-container {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.ui-modal-mock {
+    background: var(--ui-bg-primary);
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--ui-border-color);
+}
+
+.ui-modal-header-mock {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.ui-modal-header-mock h2 {
+    margin: 0 !important;
+    font-size: 1.4rem !important;
+    font-weight: 800 !important;
+    color: var(--ui-text-primary) !important;
+    border: none !important;
+}
+
+.ui-modal-close-mock {
+    font-size: 1.5rem;
+    color: #536471;
+    line-height: 1;
+}
+
+.ui-download-item-mock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border: 2px solid var(--ui-border-color);
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+
+.ui-download-info-mock h3 {
+    margin: 0 0 4px 0 !important;
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    color: var(--ui-text-primary) !important;
+    border: none !important;
+}
+
+.ui-download-info-mock p {
+    margin: 0 !important;
+    font-size: 0.85rem !important;
+    color: #536471 !important;
+}
+
+/* Administrative Mockup Styles */
+.ui-admin-card {
+    background: var(--ui-bg-primary);
+    border: 1px solid var(--ui-border-color);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 800px;
+    margin: 20px 0;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.ui-admin-header {
+    background: var(--ui-bg-secondary);
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--ui-border-color);
+}
+
+.ui-admin-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--ui-text-primary);
+}
+
+.ui-admin-section {
+    padding: 20px;
+    border-bottom: 1px solid var(--ui-border-color);
+}
+
+.ui-admin-section:last-child {
+    border-bottom: none;
+}
+
+.ui-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ui-text-primary);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ui-badge-count {
+    background: var(--ui-accent-blue);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+.ui-user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ui-user-card {
+    background: var(--ui-bg-secondary);
+    border: 1px solid var(--ui-border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ui-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ui-user-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ui-user-name {
+    font-weight: 700;
+    color: var(--ui-text-primary);
+}
+
+.ui-user-email {
+    font-size: 0.85rem;
+    color: var(--ui-text-secondary);
+}
+
+.ui-status-badge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.ui-status-pending {
+    background: #FFD700;
+    color: #000;
+}
+
+.ui-status-active {
+    background: var(--ui-accent-green);
+    color: #fff;
+}
+
+.ui-status-locked {
+    background: var(--ui-accent-red);
+    color: #fff;
+}
+
+.ui-role-badge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: 600;
+}
+
+.ui-role-admin {
+    background: #8B5CF6;
+}
+
+.ui-role-user {
+    background: #9CA3AF;
+}
+
+.ui-user-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.ui-btn-admin {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 6px;
+    border: none;
+    cursor: default;
+    transition: transform 0.1s;
+}
+
+.ui-btn-approve {
+    background: var(--ui-accent-blue);
+    color: #fff;
+}
+
+.ui-btn-delete {
+    background: transparent;
+    border: 1px solid var(--ui-border-color);
+    color: var(--ui-text-primary);
+}
+
+.ui-btn-disable {
+    background: var(--ui-accent-red);
+    color: #fff;
+}
+
+.ui-btn-unlock {
+    background: #F59E0B;
+    color: #fff;
+}
+
+/* UI Mockup Container - Protects layout in docs */
+.ui-mockup-container {
+    padding: 1rem 0 !important;
+    display: block !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+}
+
+/* Admin Menu Dropdown Mockup (Bulletproof Version) */
+.ui-dropdown-mock {
+    background: #16181C !important;
+    border: 1px solid #2F3336 !important;
+    border-radius: 12px !important;
+    width: 260px !important;
+    padding: 8px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    margin: 10px 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    backdrop-filter: blur(8px) !important;
+    position: relative !important;
+}
+
+.ui-dropdown-header {
+    padding: 12px 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    background: #1C1F23 !important;
+    border-bottom: 1px solid #2F3336 !important;
+    border-radius: 8px !important;
+    margin-bottom: 8px !important;
+}
+
+.ui-avatar-mock {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #1D9BF0 !important;
+    flex-shrink: 0 !important;
+}
+
+.ui-dropdown-mock svg {
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    flex-shrink: 0 !important;
+    display: inline-block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    stroke-width: 2 !important;
+}
+
+.ui-avatar-mock svg {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+.ui-user-details-mock {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+}
+
+.ui-username-mock {
+    color: #E7E9EA !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+    line-height: 1.2 !important;
+}
+
+.ui-role-tag-mock {
+    font-size: 11px !important;
+    color: #F4212E !important;
+    background: rgba(244, 33, 46, 0.1) !important;
+    border: 1px solid rgba(244, 33, 46, 0.4) !important;
+    padding: 1px 6px !important;
+    border-radius: 4px !important;
+    font-weight: 800 !important;
+    width: fit-content !important;
+    margin-top: 2px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+}
+
+.ui-dropdown-item-mock {
+    padding: 10px 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    color: #E7E9EA !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: default !important;
+    border-radius: 8px !important;
+    transition: background-color 0.2s !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+}
+
+.ui-dropdown-item-mock:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.ui-dropdown-item-mock svg {
+    color: #71767B !important;
+}
+
+.ui-dropdown-item-mock.logout {
+    color: #F4212E !important;
+}
+
+.ui-dropdown-item-mock.logout svg {
+    color: #F4212E !important;
+}
+
+.ui-dropdown-divider {
+    height: 1px !important;
+    background: #2F3336 !important;
+    margin: 6px 0 !important;
+}
+</style>
+<h1 id="2-">2. 시작하기</h1>
+<h2 id="21----">2.1 로그인 및 계정 관리</h2>
+<p>서비스를 이용하기 위해서는 계정 생성 및 관리자의 승인이 필요합니다.</p>
+<h3 id="211--register">2.1.1 회원가입 (Register)</h3>
+<ol>
+<li>초기 화면에서 <strong>[회원가입]</strong> 버튼을 클릭합니다.</li>
+</ol>
+<div class="ui-auth-mock-container">
+    <div class="ui-auth-card">
+        <div class="ui-auth-header">
+            <div class="ui-brand-title">CodeSign</div>
+            <h1>어서오세요 환영합니다</h1>
+            <p>코드 서명 서비스 계정으로 로그인하세요</p>
+        </div>
+        <div class="ui-form-group">
+            <label>사용자ID</label>
+            <div class="ui-input">사용자ID를 입력하세요</div>
+        </div>
+        <div class="ui-form-group">
+            <label>비밀번호</label>
+            <div class="ui-input">비밀번호를 입력하세요</div>
+        </div>
+        <div class="ui-btn-auth">로그인</div>
+        <div class="ui-auth-footer">
+            계정이 없으신가요? <span class="link">회원가입</span>
+        </div>
+    </div>
+</div>
+<ol start="2">
+<li>다음 정보를 입력합니다:
+<ul>
+<li><strong>아이디 (Username)</strong>: 3~50자의 영문, 숫자</li>
+<li><strong>이메일 (Email)</strong>: 유효한 이메일 주소</li>
+<li><strong>이름 (Display Name)</strong>: 사용자 식별 이름</li>
+<li><strong>비밀번호</strong>: 8자 이상, 대/소문자, 숫자, 특수문자 포함 필수</li>
+</ul>
+</li>
+</ol>
+<div class="ui-auth-mock-container">
+    <div class="ui-auth-card">
+        <div class="ui-auth-header">
+            <div class="ui-brand-title">CodeSign</div>
+            <h1>계정 생성</h1>
+            <p>서비스 이용을 위해 정보를 입력하세요</p>
+        </div>
+        <div class="ui-form-group">
+            <label>사용자ID</label>
+            <div class="ui-input">로그인에 사용할 ID를 선택하세요</div>
+        </div>
+        <div class="ui-form-group">
+            <label>사용자명</label>
+            <div class="ui-input">실제 이름을 입력하세요</div>
+        </div>
+        <div class="ui-form-group">
+            <label>이메일</label>
+            <div class="ui-input">이메일을 입력하세요</div>
+        </div>
+        <div class="ui-form-group">
+            <label>비밀번호</label>
+            <div class="ui-input">••••••••</div>
+            <div class="ui-password-strength">
+                <div class="ui-strength-bar strong"></div>
+            </div>
+            <div class="ui-form-hint">비밀번호 강도: 강력함</div>
+        </div>
+        <div class="ui-form-group">
+            <label>비밀번호 확인</label>
+            <div class="ui-input">••••••••</div>
+        </div>
+        <div class="ui-btn-auth">가입하기</div>
+        <div class="ui-auth-footer">
+            이미 계정이 있으신가요? <span class="link">로그인</span>
+        </div>
+    </div>
+</div>
+<ol start="3">
+<li><span class="ui-btn-inline">가입하기</span> 버튼을 클릭하면 <code>Pending(승인 대기)</code> 상태로 계정이 생성됩니다.</li>
+</ol>
+<div class="ui-auth-mock-container">
+    <div class="ui-auth-card" style="text-align: center;">
+        <div class="ui-auth-header">
+            <div style="font-size: 3rem; margin-bottom: 10px;">🕒</div>
+            <h1>회원가입 신청 완료</h1>
+            <p>관리자의 승인을 기다리고 있습니다</p>
+        </div>
+        <div class="ui-status-badge">Pending (승인 대기)</div>
+        <div style="margin-top: 20px; font-size: 0.9rem; color: #536471; line-height: 1.5;">
+            보안 정책에 따라 관리자 승인 후<br>정식으로 서비스를 이용하실 수 있습니다.
+        </div>
+        <div class="ui-btn-auth" style="background: #eff3f4; color: #0f1419; margin-top: 24px;">로그인 화면으로</div>
+    </div>
+</div>
+<div class="alert alert-important"><div class="alert-icon"><i class="fas fa-exclamation-circle"></i></div><div class="alert-content">
+<p><strong>관리자 승인 필요</strong>: 보안을 위해 신규 가입한 계정은 관리자가 <strong>승인(Approve)</strong> 처리하기 전까지 로그인이 불가능합니다. 가입 후 관리자에게 문의해주세요.</p>
+</div></div>
+<h3 id="212--login">2.1.2 로그인 (Login)</h3>
+<div class="ui-auth-mock-container">
+    <div class="ui-auth-card">
+        <div class="ui-auth-header">
+            <div class="ui-brand-title">CodeSign</div>
+            <h1>어서오세요 환영합니다</h1>
+            <p>코드 서명 서비스 계정으로 로그인하세요</p>
+        </div>
+        <div class="ui-form-group">
+            <label>사용자ID</label>
+            <div class="ui-input">사용자ID를 입력하세요</div>
+        </div>
+        <div class="ui-form-group">
+            <label>비밀번호</label>
+            <div class="ui-input">비밀번호를 입력하세요</div>
+        </div>
+        <div class="ui-btn-auth">로그인</div>
+        <div class="ui-auth-footer">
+            계정이 없으신가요? <span class="link">회원가입</span>
+        </div>
+    </div>
+</div>
+<ol>
+<li><strong>[로그인]</strong> 버튼을 클릭하거나 로그인 페이지로 이동합니다.</li>
+<li>아이디와 비밀번호를 입력합니다.</li>
+<li>성공 시 메인 대시보드로 이동합니다.</li>
+</ol>
+<h4 id="2121----account-lockout">2.1.2.1 계정 잠금 정책 (Account Lockout)</h4>
+<p>보안을 위해 <strong>5회 연속</strong> 로그인 실패 시, 해당 계정은 <strong>10분간 잠금(Lockout)</strong> 처리됩니다. 잠금이 해제될 때까지 기다리거나 관리자에게 문의하세요.</p>
+<h3 id="213--">2.1.3 세션 관리</h3>
+<h4 id="2131--">2.1.3.1 세션 타임아웃</h4>
+<ul>
+<li><strong>자동 로그아웃</strong>: <strong>30분 동안</strong> 활동이 없으면 보안을 위해 자동으로 로그아웃됩니다.</li>
+<li><strong>세션 타이머</strong>: 화면 우측 상단에 <strong>남은 시간</strong>이 표시됩니다.</li>
+<li><strong>세션 연장</strong>: 만료 전에 아무 작업(클릭, 업로드 등)을 하면 타이머가 자동으로 초기화됩니다.</li>
+</ul>
+<h4 id="2132---">2.1.3.2 단일 세션 정책</h4>
+<p>웹 브라우저와 데스크톱 앱에서는 <strong>한 번에 하나의 세션</strong>만 유지됩니다:</p>
+<ul>
+<li>다른 브라우저/기기에서 로그인 시 → <strong>기존 세션 자동 종료</strong> (중복 로그인 방지)</li>
+<li>CLI/API 도구는 이 정책의 영향을 받지 않으며, 별도의 독립 세션으로 동작합니다.</li>
+</ul>
+<div class="alert alert-important"><div class="alert-icon"><i class="fas fa-exclamation-circle"></i></div><div class="alert-content">
+<p><strong>알림</strong>: 다른 곳에서 로그인하면 &quot;다른 기기에서 로그인하여 현재 세션이 종료되었습니다&quot; 메시지가 표시됩니다.</p>
+</div></div>
+<div class="alert alert-tip"><div class="alert-icon"><i class="fas fa-lightbulb"></i></div><div class="alert-content">
+<p><strong>참고</strong>: CLI 도구는 이 정책의 영향을 받지 않으며 여러 시스템에서 동시 사용 가능합니다.</p>
+</div></div>
+<h3 id="214--">2.1.4 비밀번호 변경</h3>
+<ol>
+<li>우측 상단 사용자 아이콘을 클릭합니다.</li>
+<li><strong>[비밀번호 변경]</strong> 메뉴를 선택합니다.</li>
+<li>현재 비밀번호와 새 비밀번호를 입력하여 변경합니다.</li>
+</ol>
+
+<div id="02-cli-installation"></div>
+<style>
+/* UI Mockup Styles for CodeSign Service User Manual */
+.ui-auth-card,
+.ui-auth-card *,
+.ui-modal-mock-container,
+.ui-modal-mock-container *,
+.ui-menu-bar-mock,
+.ui-menu-bar-mock *,
+.ui-admin-card,
+.ui-admin-card *,
+.ui-dropdown-mock,
+.ui-dropdown-mock * {
+    box-sizing: border-box !important;
+}
+
+:root {
+    --ui-accent-blue: #1D9BF0;
+    --ui-accent-blue-hover: #1A8CD8;
+    --ui-accent-green: #00BA7C;
+    --ui-accent-red: #F4212E;
+    --ui-text-primary: #0F1419;
+    --ui-text-secondary: #536471;
+    --ui-bg-primary: #FFFFFF;
+    --ui-bg-secondary: #F7F9F9;
+    --ui-border-color: #EFF3F4;
+}
+
+.ui-btn-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ui-accent-blue);
+    color: white !important;
+    border-radius: 9999px;
+    padding: 2px 12px;
+    font-size: 0.85em;
+    font-weight: 700;
+    vertical-align: middle;
+    margin: 0 4px;
+    line-height: 1.2;
+    text-decoration: none !important;
+}
+
+.ui-btn-inline.success {
+    background: var(--ui-accent-green);
+}
+
+/* Theme Awareness - Sync with Docsify or manual theme if implemented */
+[data-theme="dark"],
+.dark-theme,
+body[data-theme="dark"] {
+    --ui-bg-primary: #16181C;
+    --ui-bg-secondary: #000000;
+    --ui-border-color: #2F3336;
+    --ui-text-primary: #E7E9EA;
+}
+
+[data-theme="dark"] .ui-input,
+body[data-theme="dark"] .ui-input {
+    background: #16181C !important;
+    border-color: #2F3336 !important;
+    color: #E7E9EA !important;
+}
+
+[data-theme="dark"] .ui-auth-card,
+body[data-theme="dark"] .ui-auth-card {
+    background: #16181C !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .ui-auth-header p,
+body[data-theme="dark"] .ui-auth-header p,
+[data-theme="dark"] .ui-auth-footer,
+body[data-theme="dark"] .ui-auth-footer {
+    color: #71767B !important;
+}
+
+/* Button Mocks */
+.ui-btn-mock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    border: none;
+    cursor: default;
+    user-select: none;
+    vertical-align: middle;
+    margin: 0 2px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    text-decoration: none !important;
+}
+
+.ui-btn-primary {
+    background: var(--ui-accent-blue);
+    color: #FFFFFF !important;
+}
+
+.ui-btn-success {
+    background: var(--ui-accent-green);
+    color: #FFFFFF !important;
+}
+
+.ui-btn-mock svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* Icon Mocks (like menu-bar icons) */
+.ui-icon-mock {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    border-radius: 50% !important;
+    color: var(--ui-accent-blue) !important;
+    background: transparent !important;
+    vertical-align: middle !important;
+    transition: background-color 0.2s;
+    overflow: hidden !important;
+}
+
+.ui-icon-mock svg {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    display: block !important;
+}
+
+/* Large Icon version for standalone display */
+.ui-icon-mock.large {
+    width: 64px !important;
+    height: 64px !important;
+    min-width: 64px !important;
+    min-height: 64px !important;
+}
+
+.ui-icon-mock.large svg {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+}
+
+/* Hover effects (optional, for interactive manuals) */
+.ui-btn-mock:hover {
+    filter: brightness(0.9);
+}
+
+.ui-btn-auth:hover {
+    filter: brightness(0.9);
+}
+
+[data-theme="dark"] .ui-btn-auth[style*="background: #eff3f4"],
+body[data-theme="dark"] .ui-btn-auth[style*="background: #eff3f4"] {
+    background: #2F3336 !important;
+    color: #E7E9EA !important;
+}
+
+/* Authentication Card & Form Mockups */
+.ui-auth-mock-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+    background: var(--ui-bg-primary);
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.ui-auth-card {
+    width: 420px;
+    background: var(--ui-bg-primary);
+    border: 1px solid var(--ui-border-color);
+    border-radius: 16px;
+    padding: 32px 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.ui-auth-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.ui-brand-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--ui-accent-blue);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.ui-auth-header h1 {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    margin: 0 0 4px 0 !important;
+    color: var(--ui-text-primary) !important;
+    line-height: 1.4 !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+.ui-auth-header p {
+    color: #536471 !important;
+    font-size: 0.9rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.5 !important;
+}
+
+.ui-form-group {
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ui-form-group label {
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    color: var(--ui-text-primary) !important;
+    margin: 0 0 6px 0 !important;
+    display: block !important;
+}
+
+.ui-form-group .ui-input {
+    width: 100%;
+    padding: 8px 14px;
+    border: 1px solid var(--ui-border-color);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: var(--ui-bg-primary);
+    color: #0F1419;
+    pointer-events: none;
+}
+
+.ui-btn-auth {
+    width: 100%;
+    padding: 10px;
+    background: var(--ui-accent-blue);
+    color: white;
+    border: none;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-top: 4px;
+    text-align: center;
+}
+
+/* Password Strength Indicator Mockup */
+.ui-password-strength {
+    width: 100%;
+    height: 4px;
+    background: var(--ui-border-color);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 6px;
+}
+
+.ui-strength-bar {
+    height: 100%;
+    width: 0%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.ui-strength-bar.weak {
+    width: 25%;
+    background: var(--ui-accent-red);
+}
+
+.ui-strength-bar.fair {
+    width: 50%;
+    background: #FFC107;
+}
+
+.ui-strength-bar.good {
+    width: 75%;
+    background: var(--ui-accent-blue);
+}
+
+.ui-strength-bar.strong {
+    width: 100%;
+    background: var(--ui-accent-green);
+}
+
+.ui-form-hint {
+    font-size: 0.8rem;
+    color: var(--ui-text-secondary);
+    margin-top: 4px;
+}
+
+.ui-btn-success-auth {
+    background: var(--ui-accent-green);
+}
+
+.ui-auth-footer {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--ui-border-color);
+    font-size: 0.85rem;
+    color: #536471;
+}
+
+.ui-auth-footer .link {
+    color: var(--ui-accent-blue);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* Badge for success state */
+.ui-status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: rgba(0, 186, 124, 0.1);
+    color: var(--ui-accent-green);
+    margin: 8px 0;
+}
+
+[data-theme="dark"] .ui-status-badge,
+body[data-theme="dark"] .ui-status-badge {
+    background: rgba(0, 186, 124, 0.2);
+    color: #44cf96;
+}
+
+/* Dashboard Mockups */
+.ui-file-list-mock {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 24px;
+    background: var(--ui-bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--ui-border-color);
+}
+
+.ui-file-item-mock {
+    background: var(--ui-bg-primary);
+    border: 1px solid var(--ui-border-color);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.ui-file-info-mock {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ui-file-icon-mock {
+    width: 40px;
+    height: 40px;
+    background: var(--ui-accent-blue);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+.ui-file-details-mock h4 {
+    font-size: 0.95rem;
+    margin: 0;
+    font-weight: 700;
+    color: var(--ui-text-primary);
+}
+
+.ui-file-details-mock .ui-file-size {
+    font-size: 0.8rem;
+    color: #536471;
+}
+
+.ui-status-badge-mock {
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.ui-status-uploaded-mock {
+    background: rgba(29, 155, 240, 0.1);
+    color: var(--ui-accent-blue);
+}
+
+.ui-status-signed-mock {
+    background: rgba(0, 186, 124, 0.1);
+    color: var(--ui-accent-green);
+}
+
+.ui-file-actions-mock {
+    display: flex;
+    gap: 8px;
+}
+
+.ui-btn-tiny-mock {
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+/* Upload Drop Zone Mockup */
+.ui-drop-zone-mock {
+    background: var(--ui-bg-secondary);
+    border: 2px dashed var(--ui-border-color);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    cursor: default;
+    margin: 20px 0;
+}
+
+.ui-drop-zone-mock svg {
+    width: 48px;
+    height: 48px;
+    color: var(--ui-accent-blue);
+    margin-bottom: 12px;
+}
+
+.ui-drop-zone-mock h2 {
+    font-size: 1.1rem;
+    margin: 0 0 4px 0;
+    color: var(--ui-text-primary);
+}
+
+.ui-drop-zone-mock p {
+    font-size: 0.9rem;
+    color: #536471;
+    margin: 0;
+}
+
+/* Menu Bar Mockups */
+.ui-menu-bar-mock {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ui-bg-secondary);
+    padding: 6px 14px;
+    border-radius: 9999px;
+    border: 1px solid var(--ui-border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    height: 48px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.ui-menu-info-mock {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+    color: var(--ui-text-primary);
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.ui-menu-timer-mock {
+    font-family: 'Courier New', monospace;
+    background-color: var(--ui-bg-primary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--ui-border-color);
+    color: var(--ui-accent-blue);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.ui-menu-divider-mock {
+    width: 1px;
+    height: 20px;
+    background-color: var(--ui-border-color);
+    margin: 0 4px;
+}
+
+.ui-menu-item-mock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: #536471;
+    transition: all 0.2s;
+}
+
+.ui-menu-item-mock.active {
+    color: var(--ui-accent-blue);
+    background: rgba(29, 155, 240, 0.1);
+}
+
+.ui-menu-item-mock svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Download Modal Mockup */
+.ui-modal-mock-container {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.ui-modal-mock {
+    background: var(--ui-bg-primary);
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--ui-border-color);
+}
+
+.ui-modal-header-mock {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.ui-modal-header-mock h2 {
+    margin: 0 !important;
+    font-size: 1.4rem !important;
+    font-weight: 800 !important;
+    color: var(--ui-text-primary) !important;
+    border: none !important;
+}
+
+.ui-modal-close-mock {
+    font-size: 1.5rem;
+    color: #536471;
+    line-height: 1;
+}
+
+.ui-download-item-mock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border: 2px solid var(--ui-border-color);
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+
+.ui-download-info-mock h3 {
+    margin: 0 0 4px 0 !important;
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    color: var(--ui-text-primary) !important;
+    border: none !important;
+}
+
+.ui-download-info-mock p {
+    margin: 0 !important;
+    font-size: 0.85rem !important;
+    color: #536471 !important;
+}
+
+/* Administrative Mockup Styles */
+.ui-admin-card {
+    background: var(--ui-bg-primary);
+    border: 1px solid var(--ui-border-color);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 800px;
+    margin: 20px 0;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.ui-admin-header {
+    background: var(--ui-bg-secondary);
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--ui-border-color);
+}
+
+.ui-admin-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--ui-text-primary);
+}
+
+.ui-admin-section {
+    padding: 20px;
+    border-bottom: 1px solid var(--ui-border-color);
+}
+
+.ui-admin-section:last-child {
+    border-bottom: none;
+}
+
+.ui-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ui-text-primary);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ui-badge-count {
+    background: var(--ui-accent-blue);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+.ui-user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ui-user-card {
+    background: var(--ui-bg-secondary);
+    border: 1px solid var(--ui-border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ui-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ui-user-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ui-user-name {
+    font-weight: 700;
+    color: var(--ui-text-primary);
+}
+
+.ui-user-email {
+    font-size: 0.85rem;
+    color: var(--ui-text-secondary);
+}
+
+.ui-status-badge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.ui-status-pending {
+    background: #FFD700;
+    color: #000;
+}
+
+.ui-status-active {
+    background: var(--ui-accent-green);
+    color: #fff;
+}
+
+.ui-status-locked {
+    background: var(--ui-accent-red);
+    color: #fff;
+}
+
+.ui-role-badge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: 600;
+}
+
+.ui-role-admin {
+    background: #8B5CF6;
+}
+
+.ui-role-user {
+    background: #9CA3AF;
+}
+
+.ui-user-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.ui-btn-admin {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 6px;
+    border: none;
+    cursor: default;
+    transition: transform 0.1s;
+}
+
+.ui-btn-approve {
+    background: var(--ui-accent-blue);
+    color: #fff;
+}
+
+.ui-btn-delete {
+    background: transparent;
+    border: 1px solid var(--ui-border-color);
+    color: var(--ui-text-primary);
+}
+
+.ui-btn-disable {
+    background: var(--ui-accent-red);
+    color: #fff;
+}
+
+.ui-btn-unlock {
+    background: #F59E0B;
+    color: #fff;
+}
+
+/* UI Mockup Container - Protects layout in docs */
+.ui-mockup-container {
+    padding: 1rem 0 !important;
+    display: block !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+}
+
+/* Admin Menu Dropdown Mockup (Bulletproof Version) */
+.ui-dropdown-mock {
+    background: #16181C !important;
+    border: 1px solid #2F3336 !important;
+    border-radius: 12px !important;
+    width: 260px !important;
+    padding: 8px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    margin: 10px 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    backdrop-filter: blur(8px) !important;
+    position: relative !important;
+}
+
+.ui-dropdown-header {
+    padding: 12px 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    background: #1C1F23 !important;
+    border-bottom: 1px solid #2F3336 !important;
+    border-radius: 8px !important;
+    margin-bottom: 8px !important;
+}
+
+.ui-avatar-mock {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #1D9BF0 !important;
+    flex-shrink: 0 !important;
+}
+
+.ui-dropdown-mock svg {
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    flex-shrink: 0 !important;
+    display: inline-block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    stroke-width: 2 !important;
+}
+
+.ui-avatar-mock svg {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+.ui-user-details-mock {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+}
+
+.ui-username-mock {
+    color: #E7E9EA !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+    line-height: 1.2 !important;
+}
+
+.ui-role-tag-mock {
+    font-size: 11px !important;
+    color: #F4212E !important;
+    background: rgba(244, 33, 46, 0.1) !important;
+    border: 1px solid rgba(244, 33, 46, 0.4) !important;
+    padding: 1px 6px !important;
+    border-radius: 4px !important;
+    font-weight: 800 !important;
+    width: fit-content !important;
+    margin-top: 2px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+}
+
+.ui-dropdown-item-mock {
+    padding: 10px 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    color: #E7E9EA !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: default !important;
+    border-radius: 8px !important;
+    transition: background-color 0.2s !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+}
+
+.ui-dropdown-item-mock:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.ui-dropdown-item-mock svg {
+    color: #71767B !important;
+}
+
+.ui-dropdown-item-mock.logout {
+    color: #F4212E !important;
+}
+
+.ui-dropdown-item-mock.logout svg {
+    color: #F4212E !important;
+}
+
+.ui-dropdown-divider {
+    height: 1px !important;
+    background: #2F3336 !important;
+    margin: 6px 0 !important;
+}
+</style>
+<h2 id="22----cli--">2.2 데스크탑 클라이언트 &amp; CLI 설치 가이드</h2>
+<p>서비스는 웹 브라우저뿐만 아니라 <strong>전용 데스크탑 앱</strong> 및 <strong>자동화 도구(CLI)</strong> 를 제공합니다.</p>
+<p>웹 서비스에 로그인한 후, 우측 상단 메뉴바의 <strong>다운로드 아이콘</strong> <span class="ui-icon-mock inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></span> 을 클릭하여 최신 프로그램을 다운로드할 수 있습니다.</p>
+<div class="ui-mockup-wrapper" style="text-align: center; padding: 10px 0;">
+    <span class="ui-icon-mock large"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></span>
+</div>
+<div style="display: flex; justify-content: center; margin: 24px 0;">
+    <div class="ui-menu-bar-mock">
+        <div class="ui-menu-info-mock">테스트 사용자</div>
+        <div class="ui-menu-divider-mock"></div>
+        <div class="ui-menu-timer-mock">29:57</div>
+        <div class="ui-menu-divider-mock"></div>
+        <div class="ui-menu-item-mock active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+        </div>
+        <div class="ui-menu-item-mock">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+        </div>
+        <div class="ui-menu-item-mock" style="color: var(--ui-accent-blue);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+        </div>
+        <div class="ui-menu-divider-mock"></div>
+        <div class="ui-menu-item-mock">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </div>
+        <button class="ui-menu-item-mock">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+    </div>
+</div>
+<ol>
+<li>로그인 후 상단 메뉴바에서 <strong>다운로드(Download) 아이콘</strong>을 클릭합니다.</li>
+<li>다운로드 모달 창에서 원하는 프로그램(<strong>데스크탑 클라이언트</strong> 또는 <strong>CLI 도구</strong>)을 선택하여 다운로드 버튼을 클릭합니다.</li>
+</ol>
+<div class="ui-modal-mock-container">
+    <div class="ui-modal-mock">
+        <div class="ui-modal-header-mock">
+            <h2>📦 다운로드</h2>
+            <div class="ui-modal-close-mock">×</div>
+        </div>
+
+        <div class="ui-download-item-mock">
+            <div class="ui-download-info-mock">
+                <h3>🖥️ 데스크톱 클라이언트</h3>
+                <p>Windows 전용 독립 실행형 앱</p>
+            </div>
+            <span class="ui-btn-mock ui-btn-primary ui-btn-tiny-mock">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                다운로드
+            </span>
+        </div>
+
+        <div class="ui-download-item-mock">
+            <div class="ui-download-info-mock">
+                <h3>💻 CLI 도구</h3>
+                <p>명령줄 및 자동화용 도구</p>
+            </div>
+            <span class="ui-btn-mock ui-btn-primary ui-btn-tiny-mock">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                다운로드
+            </span>
+        </div>
+    </div>
+</div>
+<h3 id="221---">2.2.1 데스크탑 클라이언트 설치</h3>
+<p>Windows 데스크탑 애플리케이션(<code>codesign_client.exe</code>)을 사용하면 브라우저 없이 독립된 창에서 모든 기능을 편리하게 사용할 수 있습니다.</p>
+<h4 id="2211---">2.2.1.1 설치 및 실행</h4>
+<ol>
+<li>위에서 설명한 방법으로 <strong><code>codesign_client.exe</code></strong> 파일을 다운로드합니다.</li>
+<li>다운로드한 파일을 더블 클릭하여 실행합니다.</li>
+<li>최초 실행 시 나타나는 <strong>설정 마법사</strong>에서 서비스 주소(URL)를 입력합니다.
+<ul>
+<li>예: <code>https://sign.example.com</code></li>
+</ul>
+</li>
+</ol>
+<h4 id="2212--">2.2.1.2 주요 특징</h4>
+<ul>
+<li><strong>자동 업데이트</strong>: 서버의 최신 UI가 자동으로 반영됩니다.</li>
+<li><strong>설정 저장</strong>: 서버 주소가 저장되어 매번 입력할 필요가 없습니다. (경로: <code>%USERPROFILE%\.codesign\codesign_client.yml</code>)</li>
+<li><strong>편의성</strong>: 브라우저 탭을 찾을 필요 없이 작업 표시줄에서 바로 접근 가능합니다.</li>
+</ul>
+<h3 id="222-cli---">2.2.2 CLI 도구 설치 (자동화용)</h3>
+<p>CI/CD 파이프라인(Jenkins, GitLab CI 등)에서 서명을 자동화하려면 **CLI 도구(<code>codesign_cli.exe</code>)**를 사용하세요.</p>
+<h4 id="2221---">2.2.2.1 설치 및 설정</h4>
+<ol>
+<li>다운로드한 <strong><code>codesign_cli.exe</code></strong> 파일을 빌드 서버의 <code>PATH</code> 경로에 복사하는 것이 좋습니다.</li>
+<li><strong>초기 설정</strong>:
+<pre><code class="language-powershell"># 대화형 설정 마법사 실행 (인자 없이 실행)
+codesign_cli
+
+# 또는 명령어로 즉시 설정
+codesign_cli config set-url https://sign.example.com
+</code></pre>
+</li>
+</ol>
+<h4 id="2222-">2.2.2.2 로그인</h4>
+<p>자동화 스크립트에서는 한 번 로그인해두면 세션이 유지됩니다.</p>
+<pre><code class="language-powershell"># 대화형 로그인
+codesign_cli login
+
+# 비대화형 로그인 (스크립트용)
+codesign_cli login -u admin -p MyPassword123!
+</code></pre>
+<h4 id="2223--">2.2.2.3 파일 서명</h4>
+<p>파일 업로드, 서명, 다운로드를 한 번에 수행합니다.</p>
+<pre><code class="language-powershell"># 단일 파일 서명 (결과: my-app_signed.exe)
+codesign_cli sign my-app.exe
+
+# 원본 파일 덮어쓰기 (-o)
+codesign_cli sign my-app.exe -o
+
+# 다른 폴더에 저장 (-d)
+codesign_cli sign my-app.exe -d C:\signed\
+
+# 여러 파일 한 번에 서명 (와일드카드)
+codesign_cli sign *.exe -o
+</code></pre>
+<h4 id="2224--">2.2.2.4 주요 명령어</h4>
+<table>
+<thead>
+<tr>
+<th>명령어</th>
+<th>설명</th>
+<th>예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>login</code></td>
+<td>인증 토큰 발급</td>
+<td><code>codesign_cli login -u user -p pass</code></td>
+</tr>
+<tr>
+<td><code>sign</code></td>
+<td>파일 서명 (단일/배치)</td>
+<td><code>codesign_cli sign *.exe -o</code></td>
+</tr>
+<tr>
+<td><code>config view</code></td>
+<td>현재 설정 확인</td>
+<td><code>codesign_cli config view</code></td>
+</tr>
+<tr>
+<td><code>config set-url</code></td>
+<td>서버 URL 설정</td>
+<td><code>codesign_cli config set-url https://...</code></td>
+</tr>
+</tbody>
+</table>
+<div class="alert alert-tip"><div class="alert-icon"><i class="fas fa-lightbulb"></i></div><div class="alert-content">
+<p><strong>팁</strong>: <code>codesign_cli sign --help</code> 로 상세 옵션과 예시를 확인할 수 있습니다.</p>
+</div></div>
+<hr>
+<h3 id="223---">2.2.3 세션 관리 정책</h3>
+<h4 id="2231-cli-">2.2.3.1 CLI 세션</h4>
+<ul>
+<li><strong>다크 모드 지원</strong>: 시스템 설정에 따라 자동 적용</li>
+<li><strong>다중 세션 허용</strong>: 여러 빌드 서버에서 동시에 독립적인 세션으로 운영 가능</li>
+<li><strong>세션 유지</strong>: 명시적으로 로그아웃하기 전까지 세션이 유지됨 (타임아웃 없음)</li>
+<li><strong>세션 저장 위치</strong>: <code>%USERPROFILE%\.codesign\codesign_cli.yml</code></li>
+</ul>
+<h4 id="2232---">2.2.3.2 웹/앱 세션과의 차이</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>CLI/API</th>
+<th>Web/Desktop</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>동시 세션</td>
+<td>✅ 허용 (CI/CD용)</td>
+<td>❌ 단일 세션만</td>
+</tr>
+<tr>
+<td>Idle</td>
+<td>♾️ 무제한 (로그아웃 시까지)</td>
+<td>⏱️ 30분 (자동 만료)</td>
+</tr>
+<tr>
+<td>사용 목적</td>
+<td>자동화, 스크립트</td>
+<td>대화형 사용</td>
+</tr>
+</tbody>
+</table>
+<div class="alert alert-tip"><div class="alert-icon"><i class="fas fa-lightbulb"></i></div><div class="alert-content">
+<p><strong>참고</strong>: 웹이나 데스크톱 앱에서 로그인해도 CLI 세션에는 영향을 주지 않습니다.</p>
+</div></div>
+<hr>
+<h3 id="224--">2.2.4 고급 기능</h3>
+<h4 id="2241-----">2.2.4.1 배치 서명 (여러 파일 처리)</h4>
+<p>와일드카드(<code>*</code>)와 디렉토리를 사용하여 <strong>여러 파일을 한 번에 서명</strong>할 수 있습니다.</p>
+<pre><code class="language-powershell"># 와일드카드로 여러 파일 서명
+codesign_cli sign C:\build\*.exe
+
+# 디렉토리 내 모든 서명 가능 파일 처리
+codesign_cli sign C:\release\
+
+# 여러 경로 조합
+codesign_cli sign *.exe *.dll C:\libs\*.dll
+</code></pre>
+<h4 id="2242--">2.2.4.2 서명 옵션</h4>
+<table>
+<thead>
+<tr>
+<th>옵션</th>
+<th>단축키</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--overwrite</code></td>
+<td><code>-o</code></td>
+<td>원본 파일을 서명된 파일로 덮어쓰기</td>
+</tr>
+<tr>
+<td><code>--outdir</code></td>
+<td><code>-d</code></td>
+<td>서명된 파일을 저장할 디렉토리 지정</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-powershell"># 원본 파일 덮어쓰기
+codesign_cli sign app.exe -o
+
+# 다른 폴더에 저장
+codesign_cli sign *.exe -d C:\signed\
+
+# 옵션 조합
+codesign_cli sign C:\build\*.exe -o -d C:\release\
+</code></pre>
+<h4 id="2243---">2.2.4.3 지원 파일 확장자</h4>
+<p>배치 처리 시 다음 확장자만 자동으로 처리됩니다:</p>
+<ul>
+<li><code>.exe</code> (Windows 실행 파일)</li>
+<li><code>.dll</code> (동적 라이브러리)</li>
+<li><code>.msi</code> (Windows 설치 패키지)</li>
+<li><code>.sys</code> (드라이버)</li>
+<li><code>.app</code>, <code>.dmg</code> (macOS용)</li>
+<li><code>.so</code>, <code>.bin</code> (Linux용)</li>
+</ul>
+<h4 id="2244-cicd--">2.2.4.4 CI/CD 통합 예시</h4>
+<p><strong>Jenkins Pipeline</strong>:</p>
+<pre><code class="language-groovy">pipeline {
+    agent any
+    stages {
+        stage('Sign') {
+            steps {
+                script {
+                    // CLI 로그인 (한 번만 필요)
+                    bat 'codesign_cli login -u ci-bot -p ${CI_PASSWORD}'
+                    
+                    // 빌드된 파일 서명
+                    bat 'codesign_cli sign dist/app.exe'
+                }
+            }
+        }
+    }
+}
+</code></pre>
+<p><strong>GitHub Actions</strong>:</p>
+<pre><code class="language-yaml">- name: Sign executable
+  env:
+    SIGN_USERNAME: ${{ secrets.SIGN_USERNAME }}
+    SIGN_PASSWORD: ${{ secrets.SIGN_PASSWORD }}
+  run: |
+    codesign_cli login -u $env:SIGN_USERNAME -p $env:SIGN_PASSWORD
+    codesign_cli sign dist/app.exe
+</code></pre>
+
+        </div>
+
+        <div class="report-footer"><span>© TSGroup</span><span>0.3.0</span></div>
+    </div>
+    
+    <div class="page" id="01-signing-guide">
+        <div class="report-header"><span>TSGroup Code Signing Service</span><span>3. 주요 기능</span></div>
+
+        <!-- H1 removed to avoid duplication if markdown already contains it -->
+
+        <div class="content-body">
+            <style>
+/* UI Mockup Styles for CodeSign Service User Manual */
+.ui-auth-card,
+.ui-auth-card *,
+.ui-modal-mock-container,
+.ui-modal-mock-container *,
+.ui-menu-bar-mock,
+.ui-menu-bar-mock *,
+.ui-admin-card,
+.ui-admin-card *,
+.ui-dropdown-mock,
+.ui-dropdown-mock * {
+    box-sizing: border-box !important;
+}
+
+:root {
+    --ui-accent-blue: #1D9BF0;
+    --ui-accent-blue-hover: #1A8CD8;
+    --ui-accent-green: #00BA7C;
+    --ui-accent-red: #F4212E;
+    --ui-text-primary: #0F1419;
+    --ui-text-secondary: #536471;
+    --ui-bg-primary: #FFFFFF;
+    --ui-bg-secondary: #F7F9F9;
+    --ui-border-color: #EFF3F4;
+}
+
+.ui-btn-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ui-accent-blue);
+    color: white !important;
+    border-radius: 9999px;
+    padding: 2px 12px;
+    font-size: 0.85em;
+    font-weight: 700;
+    vertical-align: middle;
+    margin: 0 4px;
+    line-height: 1.2;
+    text-decoration: none !important;
+}
+
+.ui-btn-inline.success {
+    background: var(--ui-accent-green);
+}
+
+/* Theme Awareness - Sync with Docsify or manual theme if implemented */
+[data-theme="dark"],
+.dark-theme,
+body[data-theme="dark"] {
+    --ui-bg-primary: #16181C;
+    --ui-bg-secondary: #000000;
+    --ui-border-color: #2F3336;
+    --ui-text-primary: #E7E9EA;
+}
+
+[data-theme="dark"] .ui-input,
+body[data-theme="dark"] .ui-input {
+    background: #16181C !important;
+    border-color: #2F3336 !important;
+    color: #E7E9EA !important;
+}
+
+[data-theme="dark"] .ui-auth-card,
+body[data-theme="dark"] .ui-auth-card {
+    background: #16181C !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .ui-auth-header p,
+body[data-theme="dark"] .ui-auth-header p,
+[data-theme="dark"] .ui-auth-footer,
+body[data-theme="dark"] .ui-auth-footer {
+    color: #71767B !important;
+}
+
+/* Button Mocks */
+.ui-btn-mock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    border: none;
+    cursor: default;
+    user-select: none;
+    vertical-align: middle;
+    margin: 0 2px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    text-decoration: none !important;
+}
+
+.ui-btn-primary {
+    background: var(--ui-accent-blue);
+    color: #FFFFFF !important;
+}
+
+.ui-btn-success {
+    background: var(--ui-accent-green);
+    color: #FFFFFF !important;
+}
+
+.ui-btn-mock svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* Icon Mocks (like menu-bar icons) */
+.ui-icon-mock {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    border-radius: 50% !important;
+    color: var(--ui-accent-blue) !important;
+    background: transparent !important;
+    vertical-align: middle !important;
+    transition: background-color 0.2s;
+    overflow: hidden !important;
+}
+
+.ui-icon-mock svg {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    display: block !important;
+}
+
+/* Large Icon version for standalone display */
+.ui-icon-mock.large {
+    width: 64px !important;
+    height: 64px !important;
+    min-width: 64px !important;
+    min-height: 64px !important;
+}
+
+.ui-icon-mock.large svg {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+}
+
+/* Hover effects (optional, for interactive manuals) */
+.ui-btn-mock:hover {
+    filter: brightness(0.9);
+}
+
+.ui-btn-auth:hover {
+    filter: brightness(0.9);
+}
+
+[data-theme="dark"] .ui-btn-auth[style*="background: #eff3f4"],
+body[data-theme="dark"] .ui-btn-auth[style*="background: #eff3f4"] {
+    background: #2F3336 !important;
+    color: #E7E9EA !important;
+}
+
+/* Authentication Card & Form Mockups */
+.ui-auth-mock-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+    background: var(--ui-bg-primary);
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.ui-auth-card {
+    width: 420px;
+    background: var(--ui-bg-primary);
+    border: 1px solid var(--ui-border-color);
+    border-radius: 16px;
+    padding: 32px 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.ui-auth-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.ui-brand-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--ui-accent-blue);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.ui-auth-header h1 {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    margin: 0 0 4px 0 !important;
+    color: var(--ui-text-primary) !important;
+    line-height: 1.4 !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+.ui-auth-header p {
+    color: #536471 !important;
+    font-size: 0.9rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.5 !important;
+}
+
+.ui-form-group {
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ui-form-group label {
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    color: var(--ui-text-primary) !important;
+    margin: 0 0 6px 0 !important;
+    display: block !important;
+}
+
+.ui-form-group .ui-input {
+    width: 100%;
+    padding: 8px 14px;
+    border: 1px solid var(--ui-border-color);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: var(--ui-bg-primary);
+    color: #0F1419;
+    pointer-events: none;
+}
+
+.ui-btn-auth {
+    width: 100%;
+    padding: 10px;
+    background: var(--ui-accent-blue);
+    color: white;
+    border: none;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-top: 4px;
+    text-align: center;
+}
+
+/* Password Strength Indicator Mockup */
+.ui-password-strength {
+    width: 100%;
+    height: 4px;
+    background: var(--ui-border-color);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 6px;
+}
+
+.ui-strength-bar {
+    height: 100%;
+    width: 0%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.ui-strength-bar.weak {
+    width: 25%;
+    background: var(--ui-accent-red);
+}
+
+.ui-strength-bar.fair {
+    width: 50%;
+    background: #FFC107;
+}
+
+.ui-strength-bar.good {
+    width: 75%;
+    background: var(--ui-accent-blue);
+}
+
+.ui-strength-bar.strong {
+    width: 100%;
+    background: var(--ui-accent-green);
+}
+
+.ui-form-hint {
+    font-size: 0.8rem;
+    color: var(--ui-text-secondary);
+    margin-top: 4px;
+}
+
+.ui-btn-success-auth {
+    background: var(--ui-accent-green);
+}
+
+.ui-auth-footer {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--ui-border-color);
+    font-size: 0.85rem;
+    color: #536471;
+}
+
+.ui-auth-footer .link {
+    color: var(--ui-accent-blue);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* Badge for success state */
+.ui-status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: rgba(0, 186, 124, 0.1);
+    color: var(--ui-accent-green);
+    margin: 8px 0;
+}
+
+[data-theme="dark"] .ui-status-badge,
+body[data-theme="dark"] .ui-status-badge {
+    background: rgba(0, 186, 124, 0.2);
+    color: #44cf96;
+}
+
+/* Dashboard Mockups */
+.ui-file-list-mock {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 24px;
+    background: var(--ui-bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--ui-border-color);
+}
+
+.ui-file-item-mock {
+    background: var(--ui-bg-primary);
+    border: 1px solid var(--ui-border-color);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.ui-file-info-mock {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ui-file-icon-mock {
+    width: 40px;
+    height: 40px;
+    background: var(--ui-accent-blue);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+.ui-file-details-mock h4 {
+    font-size: 0.95rem;
+    margin: 0;
+    font-weight: 700;
+    color: var(--ui-text-primary);
+}
+
+.ui-file-details-mock .ui-file-size {
+    font-size: 0.8rem;
+    color: #536471;
+}
+
+.ui-status-badge-mock {
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.ui-status-uploaded-mock {
+    background: rgba(29, 155, 240, 0.1);
+    color: var(--ui-accent-blue);
+}
+
+.ui-status-signed-mock {
+    background: rgba(0, 186, 124, 0.1);
+    color: var(--ui-accent-green);
+}
+
+.ui-file-actions-mock {
+    display: flex;
+    gap: 8px;
+}
+
+.ui-btn-tiny-mock {
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+/* Upload Drop Zone Mockup */
+.ui-drop-zone-mock {
+    background: var(--ui-bg-secondary);
+    border: 2px dashed var(--ui-border-color);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    cursor: default;
+    margin: 20px 0;
+}
+
+.ui-drop-zone-mock svg {
+    width: 48px;
+    height: 48px;
+    color: var(--ui-accent-blue);
+    margin-bottom: 12px;
+}
+
+.ui-drop-zone-mock h2 {
+    font-size: 1.1rem;
+    margin: 0 0 4px 0;
+    color: var(--ui-text-primary);
+}
+
+.ui-drop-zone-mock p {
+    font-size: 0.9rem;
+    color: #536471;
+    margin: 0;
+}
+
+/* Menu Bar Mockups */
+.ui-menu-bar-mock {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ui-bg-secondary);
+    padding: 6px 14px;
+    border-radius: 9999px;
+    border: 1px solid var(--ui-border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    height: 48px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.ui-menu-info-mock {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+    color: var(--ui-text-primary);
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.ui-menu-timer-mock {
+    font-family: 'Courier New', monospace;
+    background-color: var(--ui-bg-primary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--ui-border-color);
+    color: var(--ui-accent-blue);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.ui-menu-divider-mock {
+    width: 1px;
+    height: 20px;
+    background-color: var(--ui-border-color);
+    margin: 0 4px;
+}
+
+.ui-menu-item-mock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: #536471;
+    transition: all 0.2s;
+}
+
+.ui-menu-item-mock.active {
+    color: var(--ui-accent-blue);
+    background: rgba(29, 155, 240, 0.1);
+}
+
+.ui-menu-item-mock svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Download Modal Mockup */
+.ui-modal-mock-container {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.ui-modal-mock {
+    background: var(--ui-bg-primary);
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--ui-border-color);
+}
+
+.ui-modal-header-mock {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.ui-modal-header-mock h2 {
+    margin: 0 !important;
+    font-size: 1.4rem !important;
+    font-weight: 800 !important;
+    color: var(--ui-text-primary) !important;
+    border: none !important;
+}
+
+.ui-modal-close-mock {
+    font-size: 1.5rem;
+    color: #536471;
+    line-height: 1;
+}
+
+.ui-download-item-mock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border: 2px solid var(--ui-border-color);
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+
+.ui-download-info-mock h3 {
+    margin: 0 0 4px 0 !important;
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    color: var(--ui-text-primary) !important;
+    border: none !important;
+}
+
+.ui-download-info-mock p {
+    margin: 0 !important;
+    font-size: 0.85rem !important;
+    color: #536471 !important;
+}
+
+/* Administrative Mockup Styles */
+.ui-admin-card {
+    background: var(--ui-bg-primary);
+    border: 1px solid var(--ui-border-color);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 800px;
+    margin: 20px 0;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.ui-admin-header {
+    background: var(--ui-bg-secondary);
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--ui-border-color);
+}
+
+.ui-admin-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--ui-text-primary);
+}
+
+.ui-admin-section {
+    padding: 20px;
+    border-bottom: 1px solid var(--ui-border-color);
+}
+
+.ui-admin-section:last-child {
+    border-bottom: none;
+}
+
+.ui-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ui-text-primary);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ui-badge-count {
+    background: var(--ui-accent-blue);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+.ui-user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ui-user-card {
+    background: var(--ui-bg-secondary);
+    border: 1px solid var(--ui-border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ui-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ui-user-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ui-user-name {
+    font-weight: 700;
+    color: var(--ui-text-primary);
+}
+
+.ui-user-email {
+    font-size: 0.85rem;
+    color: var(--ui-text-secondary);
+}
+
+.ui-status-badge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.ui-status-pending {
+    background: #FFD700;
+    color: #000;
+}
+
+.ui-status-active {
+    background: var(--ui-accent-green);
+    color: #fff;
+}
+
+.ui-status-locked {
+    background: var(--ui-accent-red);
+    color: #fff;
+}
+
+.ui-role-badge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: 600;
+}
+
+.ui-role-admin {
+    background: #8B5CF6;
+}
+
+.ui-role-user {
+    background: #9CA3AF;
+}
+
+.ui-user-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.ui-btn-admin {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 6px;
+    border: none;
+    cursor: default;
+    transition: transform 0.1s;
+}
+
+.ui-btn-approve {
+    background: var(--ui-accent-blue);
+    color: #fff;
+}
+
+.ui-btn-delete {
+    background: transparent;
+    border: 1px solid var(--ui-border-color);
+    color: var(--ui-text-primary);
+}
+
+.ui-btn-disable {
+    background: var(--ui-accent-red);
+    color: #fff;
+}
+
+.ui-btn-unlock {
+    background: #F59E0B;
+    color: #fff;
+}
+
+/* UI Mockup Container - Protects layout in docs */
+.ui-mockup-container {
+    padding: 1rem 0 !important;
+    display: block !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+}
+
+/* Admin Menu Dropdown Mockup (Bulletproof Version) */
+.ui-dropdown-mock {
+    background: #16181C !important;
+    border: 1px solid #2F3336 !important;
+    border-radius: 12px !important;
+    width: 260px !important;
+    padding: 8px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    margin: 10px 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    backdrop-filter: blur(8px) !important;
+    position: relative !important;
+}
+
+.ui-dropdown-header {
+    padding: 12px 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    background: #1C1F23 !important;
+    border-bottom: 1px solid #2F3336 !important;
+    border-radius: 8px !important;
+    margin-bottom: 8px !important;
+}
+
+.ui-avatar-mock {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #1D9BF0 !important;
+    flex-shrink: 0 !important;
+}
+
+.ui-dropdown-mock svg {
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    flex-shrink: 0 !important;
+    display: inline-block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    stroke-width: 2 !important;
+}
+
+.ui-avatar-mock svg {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+.ui-user-details-mock {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+}
+
+.ui-username-mock {
+    color: #E7E9EA !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+    line-height: 1.2 !important;
+}
+
+.ui-role-tag-mock {
+    font-size: 11px !important;
+    color: #F4212E !important;
+    background: rgba(244, 33, 46, 0.1) !important;
+    border: 1px solid rgba(244, 33, 46, 0.4) !important;
+    padding: 1px 6px !important;
+    border-radius: 4px !important;
+    font-weight: 800 !important;
+    width: fit-content !important;
+    margin-top: 2px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+}
+
+.ui-dropdown-item-mock {
+    padding: 10px 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    color: #E7E9EA !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: default !important;
+    border-radius: 8px !important;
+    transition: background-color 0.2s !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+}
+
+.ui-dropdown-item-mock:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.ui-dropdown-item-mock svg {
+    color: #71767B !important;
+}
+
+.ui-dropdown-item-mock.logout {
+    color: #F4212E !important;
+}
+
+.ui-dropdown-item-mock.logout svg {
+    color: #F4212E !important;
+}
+
+.ui-dropdown-divider {
+    height: 1px !important;
+    background: #2F3336 !important;
+    margin: 6px 0 !important;
+}
+</style>
+# 3. 주요 기능
+<h2 id="31---">3.1 파일 서명 가이드</h2>
+<p>메인 대시보드에서 파일을 업로드하고 디지털 서명을 적용하는 방법을 설명합니다.</p>
+<h3 id="311--">3.1.1 파일 업로드</h3>
+<p>두 가지 방법으로 파일을 업로드할 수 있습니다:</p>
+<ol>
+<li><strong>드래그 앤 드롭</strong>: 점선으로 된 업로드 영역에 파일을 끌어다 놓습니다.</li>
+</ol>
+<div class="ui-drop-zone-mock">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <path d="M7 16a4 4 0 0 1-.88-7.903A5 5 0 1 1 15.9 6L16 6a5 5 0 0 1 1 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+    </svg>
+    <h2>파일을 여기에 드롭하세요</h2>
+    <p>또는 클릭하여 파일 선택</p>
+</div>
+<ol start="2">
+<li><strong>파일 선택</strong>: <strong>[파일 선택]</strong> 버튼을 클릭하여 탐색기에서 파일을 선택합니다.</li>
+</ol>
+<ul>
+<li><strong>지원 포맷</strong>: <code>.exe</code>, <code>.dll</code>, <code>.msi</code>, <code>.sys</code>, <code>.cat</code>, <code>.cab</code> 등 모든 PE 파일</li>
+<li><strong>최대 크기</strong>: 파일당 5GB 까지 지원</li>
+</ul>
+<div class="ui-file-list-mock">
+    <div class="ui-file-item-mock">
+        <div class="ui-file-info-mock">
+            <div class="ui-file-icon-mock">📄</div>
+            <div class="ui-file-details-mock">
+                <h4>Setup_Utility.exe</h4>
+                <div class="ui-file-size">15.2 MB • <span
+                        class="ui-status-badge-mock ui-status-uploaded-mock">업로드됨</span></div>
+            </div>
+        </div>
+        <div class="ui-file-actions-mock">
+            <span class="ui-btn-mock ui-btn-primary ui-btn-tiny-mock">서명</span>
+            <span class="ui-btn-mock ui-btn-danger ui-btn-tiny-mock"
+                style="background: transparent; border: 1px solid var(--ui-border-color); color: var(--ui-accent-red);">삭제</span>
+        </div>
+    </div>
+</div>
+<h3 id="312---signing">3.1.2 파일 서명 (Signing)</h3>
+<p>업로드된 파일 목록에서 <strong>[서명]</strong> 버튼을 클릭합니다.</p>
+<h4 id="3121--">3.1.2.1 상태 변화</h4>
+<ul>
+<li><strong>업로드됨 (Uploaded)</strong>: 서명 대기 상태</li>
+<li><strong>서명 중 (Signing)</strong>: 서버에서 서명 작업 진행 중 (약 1~5초 소요)</li>
+<li><strong>서명 완료 (Signed)</strong>: 서명이 완료되어 다운로드 가능한 상태</li>
+</ul>
+<div class="ui-file-list-mock">
+    <div class="ui-file-item-mock">
+        <div class="ui-file-info-mock">
+            <div class="ui-file-icon-mock" style="background: var(--ui-accent-green);">✓</div>
+            <div class="ui-file-details-mock">
+                <h4>Setup_Utility.exe</h4>
+                <div class="ui-file-size">15.2 MB • <span class="ui-status-badge-mock ui-status-signed-mock">서명
+                        완료</span></div>
+            </div>
+        </div>
+        <div class="ui-file-actions-mock">
+            <span class="ui-btn-mock ui-btn-success ui-btn-tiny-mock">다운로드</span>
+            <span class="ui-btn-mock ui-btn-danger ui-btn-tiny-mock"
+                style="background: transparent; border: 1px solid var(--ui-border-color); color: var(--ui-accent-red);">삭제</span>
+        </div>
+    </div>
+</div>
+<h4 id="3122---batch-signing">3.1.2.2 일괄 서명 (Batch Signing)</h4>
+<p>여러 파일을 한 번에 처리하려면:</p>
+<ol>
+<li>파일 목록 왼쪽의 <strong>체크박스</strong>를 선택합니다. (전체 선택 가능)</li>
+<li>상단의 <span class="ui-btn-mock ui-btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> 일괄 서명</span> 버튼을 클릭합니다.</li>
+<li>여러 파일이 동시에 병렬로 처리됩니다.</li>
+</ol>
+<h3 id="313--download">3.1.3 다운로드 (Download)</h3>
+<p>서명이 완료된 파일은 <strong>[다운로드]</strong> 버튼을 클릭하여 저장할 수 있습니다.</p>
+<ul>
+<li>다운로드 시 파일명은 업로드했던 <strong>원본 파일명</strong>과 동일하게 저장됩니다.</li>
+</ul>
+<div class="ui-file-list-mock">
+    <div class="ui-file-item-mock" style="border-color: var(--ui-accent-blue); background: rgba(29, 155, 240, 0.02);">
+        <div class="ui-file-info-mock">
+            <div class="ui-file-icon-mock" style="background: var(--ui-accent-green);">✓</div>
+            <div class="ui-file-details-mock">
+                <h4>Setup_Utility.exe</h4>
+                <div class="ui-file-size">15.2 MB • <span class="ui-status-badge-mock ui-status-signed-mock">서명
+                        완료</span></div>
+            </div>
+        </div>
+        <div class="ui-file-actions-mock">
+            <span class="ui-btn-mock ui-btn-success ui-btn-tiny-mock">다운로드</span>
+            <span class="ui-btn-mock ui-btn-danger ui-btn-tiny-mock"
+                style="background: transparent; border: 1px solid var(--ui-border-color); color: var(--ui-accent-red);">삭제</span>
+        </div>
+    </div>
+</div>
+<h4 id="3131-zip-">3.1.3.1 ZIP 다운로드</h4>
+<p>여러 개의 서명된 파일을 한 번에 받고 싶다면:</p>
+<ol>
+<li>다운로드할 파일들을 체크박스로 선택합니다.</li>
+<li>상단의 <span class="ui-btn-mock ui-btn-success"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> ZIP 다운로드</span> 버튼을 클릭합니다.</li>
+<li><code>signed_files_YYYYMMDD.zip</code> 형식으로 압축되어 다운로드됩니다.</li>
+</ol>
+<h3 id="314-----">3.1.4 파일 삭제 및 자동 정리</h3>
+<ul>
+<li><strong>수동 삭제</strong>: <strong>[삭제]</strong> 버튼을 눌러 파일을 목록에서 제거할 수 있습니다. 만약 서명된 파일을 다운로드하지 않고 삭제하려 하면 경고창이 표시됩니다.</li>
+<li><strong>자동 정리</strong>: 보안 및 서버 공간 관리를 위해, 업로드된 지 <strong>24시간</strong>이 지난 원본 파일은 자동으로 삭제됩니다. 서명된 파일은 설정에 따라 더 오래(기본 30일) 보관될 수 있습니다.</li>
+</ul>
+
+        </div>
+
+        <div class="report-footer"><span>© TSGroup</span><span>0.3.0</span></div>
+    </div>
+    
+    <div class="page" id="01-faq">
+        <div class="report-header"><span>TSGroup Code Signing Service</span><span>4. 지원</span></div>
+
+        <!-- H1 removed to avoid duplication if markdown already contains it -->
+
+        <div class="content-body">
+            <h1 id="4-">4. 지원</h1>
+<h2 id="41------">4.1 자주 묻는 질문 및 문제 해결</h2>
+<p>서비스 이용 중 자주 발생하는 문제와 해결 방법을 안내합니다.</p>
+<h3 id="411---">4.1.1 서명 실패 관련</h3>
+<h3 id="q-sign-failed-exit-status-1--">Q. &quot;Sign failed: exit status 1&quot; 오류가 발생합니다.</h3>
+<p>주로 인증서 설정이나 타임스탬프 서버 연결 문제일 수 있습니다.</p>
+<ul>
+<li><strong>해결</strong>: 관리자에게 문의하여 시스템 로그(<code>ERROR</code> 레벨)를 확인해달라고 요청하세요. 타임스탬프 서버(<code>http://timestamp.digicert.com</code> 등)가 정상 작동 중인지 확인이 필요할 수 있습니다.</li>
+</ul>
+<h3 id="q-----0">Q. 서명이 완료되었는데 파일 크기가 0바이트입니다.</h3>
+<p>서버 디스크 공간 부족이나 파일 저장 권한 문제일 수 있습니다. 잠시 후 다시 시도해보세요.</p>
+<h3 id="412---">4.1.2 계정 및 로그인</h3>
+<h3 id="q-your-account-is-locked-----">Q. &quot;Your account is locked&quot; 메시지가 뜨고 로그인이 안 됩니다.</h3>
+<p>5회 연속 비밀번호를 틀려 계정이 잠금(Lockout)된 상태입니다.</p>
+<ul>
+<li><strong>해결</strong>: 마지막 시도 후 <strong>10분</strong>이 지나면 자동으로 해제됩니다.</li>
+</ul>
+<h3 id="q-----">Q. 회원가입을 했는데 로그인이 안 됩니다.</h3>
+<p>신규 가입 계정은 관리자의 <strong>승인</strong>이 필요합니다.</p>
+<ul>
+<li><strong>해결</strong>: 관리자에게 계정 승인을 요청하세요.</li>
+</ul>
+<h3 id="413---">4.1.3 파일 및 다운로드</h3>
+<h3 id="q---">Q. 다운로드한 파일명이 깨집니다.</h3>
+<p>최신 버전에서는 파일명 인코딩 문제가 해결되었습니다. 브라우저 캐시를 삭제하고 다시 시도해보세요.</p>
+<h3 id="q-------">Q. 서명된 파일에 &quot;게시자를 알 수 없음&quot;이라고 뜹니다.</h3>
+<p>파일 속성(Properties) -&gt; 디지털 서명(Digital Signatures) 탭을 확인해보세요.</p>
+<ul>
+<li>목록에 서명이 존재한다면 정상입니다.</li>
+<li>&quot;이 디지털 서명은 유효하지 않습니다&quot;라고 나온다면 루트 인증서(Root CA) 문제일 수 있습니다. (개발 환경에서는 Self-Signed 인증서를 신뢰할 수 있는 루트 인증서 목록에 추가해야 합니다.)</li>
+</ul>
+<h2 id="42--">4.2 기술 지원</h2>
+<p>위 내용으로 해결되지 않을 경우, 아래 정보를 포함하여 기술 지원 팀에 문의해주세요.</p>
+<ol>
+<li>오류 발생 시각</li>
+<li>사용자 ID</li>
+<li>업로드한 파일명</li>
+<li>오류 메시지 스크린샷</li>
+</ol>
+
+        </div>
+
+        <div class="report-footer"><span>© TSGroup</span><span>0.3.0</span></div>
+    </div>
+    
+
+    <!-- Mermaid Support -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+
+        // Modern Alert Styling Script
+        document.addEventListener("DOMContentLoaded", function () {
+            const alerts = document.querySelectorAll('.alert-content p');
+            alerts.forEach(p => {
+                // Check if p starts with a strong tag followed by a colon
+                // Structure: <strong>Title</strong>: Content
+                // We want to transform it to:
+                // <div class="alert-title">Title</div>
+                // <div class="alert-body">Content</div>
+
+                const html = p.innerHTML.trim();
+                // Regex to find <strong>Text</strong>: or <strong>Text</strong> :
+                // We use a non-greedy capture for the title content inside strong
+                const match = html.match(/^<strong>(.*?)<\/strong>\s*:\s*(.*)/s);
+
+                if (match) {
+                    const titleText = match[1];
+                    const bodyText = match[2];
+
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'alert-title';
+                    titleDiv.innerHTML = titleText;
+
+                    const bodyDiv = document.createElement('div');
+                    bodyDiv.className = 'alert-body';
+                    bodyDiv.innerHTML = bodyText;
+
+                    const container = p.parentElement;
+                    container.innerHTML = ''; // Clear p
+                    container.appendChild(titleDiv);
+                    container.appendChild(bodyDiv);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

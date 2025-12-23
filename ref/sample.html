@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Strategic Report 2025</title>
+    <link href="https://cdn.jsdelivr.net/npm/inter-ui@3.19.3/inter.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #09090b;
+            --muted: #71717a;
+            --border: #e4e4e7;
+            --accent: #2563eb;
+            --page-width: 210mm;
+            --page-height: 297mm;
+        }
+
+        /* 인쇄 설정 */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            color: var(--primary);
+            background-color: #f4f4f5; /* 브라우저 뷰용 */
+        }
+
+        /* 페이지 기본 구조 */
+        .page {
+            width: var(--page-width);
+            height: var(--page-height);
+            margin: 10mm auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+            box-sizing: border-box;
+            padding: 25mm 20mm;
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media print {
+            body { background: none; }
+            .page { margin: 0; box-shadow: none; }
+        }
+
+        /* 헤더 & 푸터 */
+        .report-header {
+            position: absolute;
+            top: 10mm;
+            left: 20mm;
+            right: 20mm;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+        }
+
+        .report-footer {
+            position: absolute;
+            bottom: 10mm;
+            left: 20mm;
+            right: 20mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--muted);
+            border-top: 1px solid var(--border);
+            padding-top: 5px;
+        }
+
+        /* 1. 표지 (Page 1) */
+        .cover { justify-content: center; align-items: flex-start; text-align: left; }
+        .cover-tag { background: var(--primary); color: white; padding: 4px 12px; font-size: 0.8rem; font-weight: 600; margin-bottom: 20px; }
+        .cover h1 { font-size: 4rem; line-height: 1; letter-spacing: -3px; margin: 0; }
+        .cover .subtitle { font-size: 1.5rem; color: var(--muted); margin-top: 10px; font-weight: 300; }
+        .cover-info { margin-top: auto; width: 100%; }
+        .cover-info p { margin: 5px 0; font-size: 0.9rem; }
+        .copyright-big { font-size: 0.75rem; color: var(--muted); margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px; }
+
+        /* 2. 목차 (Page 2) */
+        .toc-list { list-style: none; padding: 0; margin-top: 40px; }
+        .toc-item { display: flex; align-items: baseline; margin-bottom: 18px; }
+        .toc-title { font-weight: 500; font-size: 1.1rem; }
+        .toc-dots { flex: 1; border-bottom: 1px dotted var(--border); margin: 0 10px; }
+        .toc-page { font-weight: 600; color: var(--accent); }
+
+        /* 본문 공통 */
+        .section-title { font-size: 2rem; letter-spacing: -1px; margin-bottom: 30px; }
+        .content-body { line-height: 1.6; font-size: 1rem; color: #3f3f46; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; }
+        .card { border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+        .card h3 { margin-top: 0; font-size: 1.1rem; color: var(--primary); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; background: #f9fafb; padding: 12px; font-size: 0.85rem; border-bottom: 2px solid var(--primary); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+
+    </style>
+</head>
+<body>
+
+    <div class="page cover">
+        <div class="cover-tag">ANNUAL REPORT 2025</div>
+        <h1>Strategic<br>Enterprise<br>Analysis</h1>
+        <p class="subtitle">Future Roadmap & Operational Excellence</p>
+        
+        <div class="cover-info">
+            <p><strong>작성자:</strong> 김현우 수석 분석가 (Data Strategy Team)</p>
+            <p><strong>발행일:</strong> 2025년 12월 21일</p>
+            <p><strong>문서번호:</strong> RD-2025-012-TX</p>
+            <div class="copyright-big">
+                © 2025 Shadcn Analytics Group. All rights reserved. 본 문서의 무단 복제 및 전재를 금합니다.
+            </div>
+        </div>
+    </div>
+
+    <div class="page">
+        <div class="report-header"><span>STRATEGIC REPORT 2025</span><span>TABLE OF CONTENTS</span></div>
+        <h2 class="section-title">목차</h2>
+        <ul class="toc-list">
+            <li class="toc-item"><span class="toc-title">01. 경영 요약 (Executive Summary)</span><span class="toc-dots"></span><span class="toc-page">03</span></li>
+            <li class="toc-item"><span class="toc-title">02. 재무 성과 분석</span><span class="toc-dots"></span><span class="toc-page">04</span></li>
+            <li class="toc-item"><span class="toc-title">03. 시장 트렌드 및 경쟁사 비교</span><span class="toc-dots"></span><span class="toc-page">05</span></li>
+            <li class="toc-item"><span class="toc-title">04. 주요 프로젝트 현황</span><span class="toc-dots"></span><span class="toc-page">06</span></li>
+            <li class="toc-item"><span class="toc-title">05. 글로벌 리전 성장 지표</span><span class="toc-dots"></span><span class="toc-page">07</span></li>
+            <li class="toc-item"><span class="toc-title">06. 조직 역량 및 인사이트</span><span class="toc-dots"></span><span class="toc-page">08</span></li>
+            <li class="toc-item"><span class="toc-title">07. 리스크 관리 가이드라인</span><span class="toc-dots"></span><span class="toc-page">09</span></li>
+            <li class="toc-item"><span class="toc-title">08. 2026 로드맵 제언</span><span class="toc-dots"></span><span class="toc-page">10</span></li>
+        </ul>
+        <div class="report-footer"><span>© 2025 Shadcn Group</span><span>Page 02</span></div>
+    </div>
+
+    <div class="page">
+        <div class="report-header"><span>STRATEGIC REPORT 2025</span><span>01. EXECUTIVE SUMMARY</span></div>
+        <h2 class="section-title">01. 경영 요약</h2>
+        <div class="content-body">
+            <p>본 보고서는 2025년 한 해 동안의 기업 성과를 분석하고, 향후 2026년의 전략적 방향성을 제시하기 위해 작성되었습니다. 전년 대비 매출 성장률은 25.8%를 기록하였으며, 특히 디지털 트랜스포메이션 부문에서 가시적인 성과를 거두었습니다.</p>
+            
+            <div class="grid">
+                <div class="card">
+                    <h3>핵심 성과 (KPI)</h3>
+                    <ul>
+                        <li>매출 목표 대비 112% 달성</li>
+                        <li>고객 유지율(Retention) 89% 기록</li>
+                        <li>신규 시장 점유율 15% 확대</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>향후 과제</h3>
+                    <p>공급망 최적화 및 AI 기반 고객 서비스 자동화를 통한 운영 효율화가 내년도 최우선 과제로 선정되었습니다.</p>
+                </div>
+            </div>
+        </div>
+        <div class="report-footer"><span>© 2025 Shadcn Group</span><span>Page 03</span></div>
+    </div>
+
+    <div class="page">
+        <div class="report-header"><span>STRATEGIC REPORT 2025</span><span>02. FINANCIAL PERFORMANCE</span></div>
+        <h2 class="section-title">02. 재무 성과 분석</h2>
+        <table>
+            <thead>
+                <tr><th>Category</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Revenue</td><td>$1.2M</td><td>$1.5M</td><td>$1.8M</td><td>$2.1M</td></tr>
+                <tr><td>Expenses</td><td>$0.8M</td><td>$0.9M</td><td>$1.0M</td><td>$1.1M</td></tr>
+                <tr><td>Net Profit</td><td>$0.4M</td><td>$0.6M</td><td>$0.8M</td><td>$1.0M</td></tr>
+            </tbody>
+        </table>
+        <div class="report-footer"><span>© 2025 Shadcn Group</span><span>Page 04</span></div>
+    </div>
+
+    <div class="page">
+        <div class="report-footer"><span>© 2025 Shadcn Group</span><span>Page 10 (Last Page)</span></div>
+    </div>
+
+</body>
+</html>

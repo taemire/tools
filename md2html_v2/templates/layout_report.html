@@ -478,6 +478,8 @@
             .ui-modal-mock-container,
             .ui-dropdown-mock,
             .ui-mockup-wrapper,
+            .live-ui-mockup,
+            /* New Universal Engine */
             .alert {
                 page-break-inside: avoid;
             }
@@ -487,7 +489,128 @@
             }
         }
 
-        /* UI Mockup Design System */
+        /* UI Mockup Design System - Universal Engine V1 */
+        :root {
+            --lu-bg-primary: #FFFFFF;
+            --lu-bg-secondary: #F7F9F9;
+            --lu-bg-tertiary: #EFF3F4;
+            --lu-text-primary: #0F1419;
+            --lu-text-secondary: #536471;
+            --lu-text-tertiary: #71767B;
+            --lu-border-color: #EFF3F4;
+            --lu-accent-blue: #1D9BF0;
+            --lu-accent-blue-hover: #1A8CD8;
+            --lu-accent-green: #00BA7C;
+            --lu-accent-red: #F4212E;
+        }
+
+        .live-ui-mockup {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--lu-text-primary);
+            background: var(--lu-bg-primary);
+            line-height: 1.6;
+            border: 1px solid var(--lu-border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 1rem 0;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .live-ui-mockup .m-container {
+            padding: 1.5rem;
+        }
+
+        .live-ui-mockup .m-header {
+            border-bottom: 1px solid var(--lu-border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .live-ui-mockup .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 9999px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+        }
+
+        .live-ui-mockup .btn-primary {
+            background: var(--lu-accent-blue);
+            color: #fff;
+        }
+
+        .live-ui-mockup .btn-success {
+            background: var(--lu-accent-green);
+            color: #fff;
+        }
+
+        .live-ui-mockup .btn-outline {
+            background: transparent;
+            border: 1px solid var(--lu-border-color);
+            color: var(--lu-text-primary);
+        }
+
+        .live-ui-mockup .item-row {
+            background: var(--lu-bg-primary);
+            border: 1px solid var(--lu-border-color);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .live-ui-mockup .badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .live-ui-mockup .badge-blue {
+            background: rgba(29, 155, 240, 0.1);
+            color: var(--lu-accent-blue);
+        }
+
+        .live-ui-mockup .badge-green {
+            background: rgba(0, 186, 124, 0.1);
+            color: var(--lu-accent-green);
+        }
+
+        .live-ui-mockup .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .live-ui-mockup .modal-mock {
+            background: var(--lu-bg-primary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        .live-ui-mockup .m-flex {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* Legacy Mockup Design System */
         .ui-auth-card,
         .ui-auth-card *,
         .ui-modal-mock-container,
@@ -499,198 +622,6 @@
         .ui-dropdown-mock,
         .ui-dropdown-mock * {
             box-sizing: border-box !important;
-        }
-
-        :root {
-            --ui-accent-blue: #1D9BF0;
-            --ui-accent-blue-hover: #1A8CD8;
-            --ui-accent-green: #00BA7C;
-            --ui-accent-red: #F4212E;
-            --ui-text-primary: #0F1419;
-            --ui-text-secondary: #536471;
-            --ui-bg-primary: #FFFFFF;
-            --ui-bg-secondary: #F7F9F9;
-            --ui-border-color: #EFF3F4;
-        }
-
-        .ui-btn-inline {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--ui-accent-blue);
-            color: white !important;
-            border-radius: 9999px;
-            padding: 2px 12px;
-            font-size: 0.85em;
-            font-weight: 700;
-            vertical-align: middle;
-            margin: 0 4px;
-            line-height: 1.2;
-            text-decoration: none !important;
-        }
-
-        .ui-btn-inline.success {
-            background: var(--ui-accent-green);
-        }
-
-        [data-theme="dark"],
-        .dark-theme,
-        body[data-theme="dark"] {
-            --ui-bg-primary: #16181C;
-            --ui-bg-secondary: #000000;
-            --ui-border-color: #2F3336;
-            --ui-text-primary: #E7E9EA;
-        }
-
-        .ui-btn-mock {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 9999px;
-            font-size: 14px;
-            font-weight: 700;
-            line-height: 1;
-            border: none;
-            cursor: default;
-            user-select: none;
-            vertical-align: middle;
-            margin: 0 2px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            text-decoration: none !important;
-        }
-
-        .ui-btn-primary {
-            background: var(--ui-accent-blue);
-            color: #FFFFFF !important;
-        }
-
-        .ui-btn-success {
-            background: var(--ui-accent-green);
-            color: #FFFFFF !important;
-        }
-
-        .ui-auth-card {
-            width: 420px;
-            background: var(--ui-bg-primary);
-            border: 1px solid var(--ui-border-color);
-            border-radius: 16px;
-            padding: 32px 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-        }
-
-        .ui-brand-title {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--ui-accent-blue);
-            margin-bottom: 8px;
-        }
-
-        .ui-auth-header h1 {
-            font-size: 1.25rem !important;
-            font-weight: 700 !important;
-            border: none !important;
-            margin: 0 !important;
-        }
-
-        .ui-input {
-            width: 100%;
-            padding: 8px 14px;
-            border: 1px solid var(--ui-border-color);
-            border-radius: 8px;
-            font-size: 0.95rem;
-            background: var(--ui-bg-primary);
-        }
-
-        .ui-btn-auth {
-            width: 100%;
-            padding: 10px;
-            background: var(--ui-accent-blue);
-            color: white;
-            border: none;
-            border-radius: 9999px;
-            font-weight: 700;
-            text-align: center;
-        }
-
-        .ui-password-strength {
-            width: 100%;
-            height: 4px;
-            background: var(--ui-border-color);
-            border-radius: 2px;
-            margin-top: 6px;
-        }
-
-        .ui-strength-bar {
-            height: 100%;
-            transition: all 0.3s ease;
-        }
-
-        .ui-strength-bar.weak {
-            width: 25%;
-            background: var(--ui-accent-red);
-        }
-
-        .ui-strength-bar.fair {
-            width: 50%;
-            background: #FFC107;
-        }
-
-        .ui-strength-bar.good {
-            width: 75%;
-            background: var(--ui-accent-blue);
-        }
-
-        .ui-strength-bar.strong {
-            width: 100%;
-            background: var(--ui-accent-green);
-        }
-
-        .ui-admin-card {
-            background: var(--ui-bg-primary);
-            border: 1px solid var(--ui-border-color);
-            border-radius: 12px;
-            width: 100%;
-            max-width: 800px;
-            margin: 20px 0;
-            overflow: hidden;
-        }
-
-        .ui-admin-header {
-            background: var(--ui-bg-secondary);
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--ui-border-color);
-        }
-
-        .ui-admin-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1.25rem;
-            font-weight: 800;
-        }
-
-        .ui-admin-section {
-            padding: 20px;
-            border-bottom: 1px solid var(--ui-border-color);
-        }
-
-        .ui-section-title {
-            font-size: 1rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .ui-badge-count {
-            background: var(--ui-accent-blue);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.75rem;
         }
 
         /* UI Mockup Design System - Premium Upgrade */
