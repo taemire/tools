@@ -762,10 +762,11 @@
     <div class="document-container">
         <!-- Cover -->
         <div class="cover-page">
-            <div class="manual-badge">User Manual</div>
+            <div class="manual-badge">{{if .Header}}{{.Header}}{{else}}User Manual{{end}}</div>
 
             <div class="main-content">
                 <div class="title">{{.Title}}</div>
+                {{if .Subtitle}}<div class="subtitle">{{.Subtitle}}</div>{{end}}
                 <div class="version">Version {{.Version}}</div>
             </div>
 
