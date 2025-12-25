@@ -41,7 +41,7 @@ set TITLE=
 set VERSION=
 set CONFIG_FILE=
 set TEMPLATE=report
-set SKIP_PAGES=3
+set SKIP_PAGES=0
 set PAGE_OFFSET=1
 
 :parse_args
@@ -70,7 +70,7 @@ if "!INPUT_PATH!"=="" (
     echo   -version    Document version
     echo   -c/-config  AUTHORS.yml config file
     echo   -template   Template name ^(default: report^)
-    echo   -skip       Pages to skip for PDF analysis ^(default: 3 for cover+toc^)
+    echo   -skip       Pages to skip for PDF analysis ^(default: 0 = auto-detect^)
     echo   -offset     Page number offset ^(default: 1, cover not counted^)
     exit /b 1
 )
@@ -96,7 +96,7 @@ echo   md2pdf_v2 - 2-Pass PDF Generation with Accurate TOC Page Numbers
 echo ==============================================================================
 echo   Input:  !INPUT_PATH!
 echo   Output: !PDF_OUT!
-echo   Skip:   !SKIP_PAGES! pages ^(cover + TOC^)
+echo   Skip:   !SKIP_PAGES! pages ^(0 = auto-detect TOC end^)
 echo   Offset: !PAGE_OFFSET! ^(page number adjustment^)
 echo ==============================================================================
 echo.

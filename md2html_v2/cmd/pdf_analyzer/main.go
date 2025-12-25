@@ -44,7 +44,7 @@ func main() {
 	pdfPath := flag.String("i", "", "Input PDF file path")
 	sectionsJSON := flag.String("sections", "", "JSON array of section titles to find (or file path)")
 	outputJSON := flag.String("o", "", "Output JSON file (optional, defaults to stdout)")
-	skipPages := flag.Int("skip", 0, "Number of pages to skip from the beginning (e.g., cover + TOC)")
+	skipPages := flag.Int("skip", 0, "Number of pages to skip from the beginning (0 or -1 = auto-detect, positive number = manual)")
 	pageOffset := flag.Int("offset", 0, "Page number offset (subtract from physical page number, 0=no adjustment, 1=cover not counted)")
 	flag.Parse()
 
@@ -110,10 +110,29 @@ func main() {
 		fmt.Fprintf(os.Stderr, "[INFO] Loaded %d sections (including subheadings)\n", len(sections))
 	}
 
+	// 목차 끝 페이지 자동 감지 또는 수동 설정
+	var actualSkipPages int
+	if *skipPages <= 0 {
+		// 자동 감지 모드
+		fmt.Fprintf(os.Stderr, "[INFO] Auto-detecting TOC end page...\n")
+		detectedSkip := detectTocEndPage(sections, r)
+		if detectedSkip > 0 {
+			actualSkipPages = detectedSkip
+		} else {
+			// 감지 실패 시 기본값 사용 (표지 1p + 목차 2p = 3p)
+			actualSkipPages = 3
+			fmt.Fprintf(os.Stderr, "[INFO] Using default skip pages: %d\n", actualSkipPages)
+		}
+	} else {
+		// 수동 지정 모드
+		actualSkipPages = *skipPages
+		fmt.Fprintf(os.Stderr, "[INFO] Using manual skip pages: %d\n", actualSkipPages)
+	}
+
 	// 각 페이지에서 텍스트 추출하고 섹션 제목 찾기
-	// skipPages만큼 건너뛰고 본문 페이지부터 검색
-	startPage := *skipPages + 1
-	fmt.Fprintf(os.Stderr, "[INFO] Searching from page %d (skipping %d pages)\n", startPage, *skipPages)
+	// actualSkipPages만큼 건너뛰고 본문 페이지부터 검색
+	startPage := actualSkipPages + 1
+	fmt.Fprintf(os.Stderr, "[INFO] Searching from page %d (skipping %d pages)\n", startPage, actualSkipPages)
 
 	for pageNum := startPage; pageNum <= totalPages; pageNum++ {
 		page := r.Page(pageNum)
@@ -159,6 +178,44 @@ func main() {
 	} else {
 		fmt.Println(string(jsonOutput))
 	}
+}
+
+// detectTocEndPage는 첫 번째 섹션이 나타나는 페이지를 찾아 목차 끝 페이지를 반환
+// sections: 찾을 섹션 리스트
+// r: PDF Reader
+// 반환값: 목차 끝 페이지 번호 (0이면 감지 실패, 기본값 사용 필요)
+func detectTocEndPage(sections []SectionPage, r *pdf.Reader) int {
+	if len(sections) == 0 {
+		return 0
+	}
+
+	totalPages := r.NumPage()
+	// 페이지 2부터 스캔 시작 (페이지 1은 항상 표지로 가정)
+	for pageNum := 2; pageNum <= totalPages; pageNum++ {
+		page := r.Page(pageNum)
+		if page.V.IsNull() {
+			continue
+		}
+
+		// 페이지 텍스트 추출
+		text, err := page.GetPlainText(nil)
+		if err != nil {
+			continue
+		}
+
+		// 첫 번째 섹션을 찾으면 본문 시작으로 판단
+		// 본문 시작 페이지 - 1 = 목차 끝 페이지
+		if containsTitle(text, sections[0].Title) {
+			tocEndPage := pageNum - 1
+			fmt.Fprintf(os.Stderr, "[AUTO-DETECT] First section '%s' found on page %d\n", sections[0].Title, pageNum)
+			fmt.Fprintf(os.Stderr, "[AUTO-DETECT] TOC ends at page %d (pages to skip: %d)\n", tocEndPage, tocEndPage)
+			return tocEndPage
+		}
+	}
+
+	// 첫 섹션을 찾지 못한 경우
+	fmt.Fprintf(os.Stderr, "[WARN] Could not detect TOC end page (first section not found)\n")
+	return 0
 }
 
 // containsTitle는 텍스트에서 제목을 찾음 (숫자 접두사 무시)
