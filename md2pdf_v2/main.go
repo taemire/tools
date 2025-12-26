@@ -36,16 +36,20 @@ type PDFRenderer struct {
 
 	// State
 	currentTitle string // For Header
+	isDryRun     bool   // Flag for Pass 1
 }
 
 // Colors
+const mm2pt = 2.83464567
+
 func (r *PDFRenderer) setPrimaryColor() { r.pdf.SetTextColor(9, 9, 11) }        // #09090b
 func (r *PDFRenderer) setMutedColor()   { r.pdf.SetTextColor(113, 113, 122) }   // #71717a
 func (r *PDFRenderer) setAccentColor()  { r.pdf.SetTextColor(37, 99, 235) }     // #2563eb
 func (r *PDFRenderer) setBorderColor()  { r.pdf.SetStrokeColor(228, 228, 231) } // #e4e4e7
 func (r *PDFRenderer) setWhiteColor()   { r.pdf.SetTextColor(255, 255, 255) }
 
-const mm2pt = 2.83464567
+// headingPageMap stores the page number for each heading title from Pass 1
+var headingPageMap = make(map[string]int)
 
 func main() {
 	input := flag.String("i", "", "Input markdown file")
@@ -81,84 +85,149 @@ func main() {
 		lineHeight: 18,
 	}
 
-	// --- Pass 1: Dry Run (Approximate TOC Page Numbers) ---
-	r.simulateTOC(doc, data)
+	// --- Pass 1: Dry Run (Calculate Page Numbers) ---
+	fmt.Println("Starting Pass 1: Calculating page numbers...")
+
+	// Initialize font path
+	r.fontPath = `C:\Windows\Fonts\malgun.ttf`
+
+	dryRunPdf := &gopdf.GoPdf{}
+	dryRunPdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+	r.pdf = dryRunPdf
+	// Font setup for Dry Run
+	dryRunPdf.AddTTFFont("malgun", r.fontPath)
+	dryRunPdf.SetFont("malgun", "", 11)
+
+	// Simulate Cover
+	dryRunPdf.AddPage()
+
+	// Simulate TOC pages
+	// We estimate TOC pages initially, then it will be corrected in Pass 2 if needed
+	// For Pass 1, we assume a fixed number of TOC pages (e.g., 2) to start content offset
+	// However, to get EXACT content pages, we should just render content and see where headings land relative to start.
+	// But simply, let's just render the body starting from a hypothetical page.
+	// Let's assume TOC takes 2 pages for now.
+	tocEstPages := 2
+	r.pageCount = 1 + tocEstPages // Cover(1) + TOC(2)
+
+	// Start Content for Dry Run
+	dryRunPdf.AddPage()
+	r.renderHeader("INTRODUCTION")
+	r.renderFooter()
+	dryRunPdf.SetY(r.marginT)
+
+	// Render Body to capture page numbers
+	r.isDryRun = true
+	r.renderNode(doc, data)
+	r.isDryRun = false
+
+	fmt.Printf("Pass 1 Complete. Found %d headings.\n", len(headingPageMap))
 
 	// --- Pass 2: Actual Render ---
+	fmt.Println("Starting Pass 2: Final Rendering...")
+
+	// Create final PDF
 	pdf := &gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
-	r.pdf = pdf
-
-	r.fontPath = `C:\Windows\Fonts\malgun.ttf`
 	pdf.AddTTFFont("malgun", r.fontPath)
 	pdf.SetFont("malgun", "", 11)
+	r.pdf = pdf
+	r.toc = nil // Reset TOC
+	r.pageCount = 0
 
 	pdf.AddPage() // Page 1: Cover
 	r.renderCover()
 
-	// Check if TOC needs multiple pages
-	r.pageCount = 2
-	tocPages := r.calculateTOCPages()
-	if tocPages > 1 {
-		// Shift all content page numbers
-		shift := tocPages - 1
-		for i := range r.toc {
-			r.toc[i].PageNum += shift
-		}
+	// Build TOC from captured map
+	// We need to walk AST again or store the order?
+	// Storing order is better. But let's just populate TOC in Pass 2 using the map.
+	// Actually, we need TOC entries BEFORE rendering TOC.
+	// So we should build r.toc list during Pass 1 as well.
+
+	// Let's refine: In Pass 1, we populate r.toc with Titles and PageNums.
+	// But we need to recreate r.toc in Pass 2?? No, just keep it.
+	// The problem is r.toc is filled in renderNode via AST walk.
+	// So we just clear r.toc before Pass 1?
+	// r.toc is appended in renderNode?? No, strictly in current code it's not.
+	// We need to modify renderNode to append to TOC.
+
+	// Wait, previous code simulated TOC via ast.Walk separate from renderNode.
+	// Now we will use renderNode for both.
+
+	// Re-verify TOC logic:
+	// We need to calculate how many pages TOC takes based on the items found in Pass 1.
+	_ = r.calculateTOCPages() // Just for initial estimate, will be recalculated after Pass 1 re-run
+
+	// Pass 1 will be re-run below with correct page starting point.
+	// Actual shift is calculated after the re-run.
+
+	// RETRYING LOGIC FOR SIMPLICITY:
+	// Pass 1: Render ONLY CONTENT starting at Page 1. Capture Page Nums.
+	// Pass 2: Render Cover (1 page) + TOC (N pages).
+	//         Shift captured Page Nums by (1 + N).
+	//         Render Content.
+
+	// --- RE-DOING PASS 1 ---
+	r.pdf = dryRunPdf
+	r.toc = []TOCEntry{}
+	r.pageCount = 1
+	dryRunPdf.AddPage()
+	dryRunPdf.SetY(r.marginT)
+
+	r.isDryRun = true
+	r.renderNode(doc, data)
+	r.isDryRun = false
+
+	// Calculate Shift
+	realTOCPages := r.calculateTOCPages()
+	totalShift := 1 + realTOCPages
+
+	// Updates TOC entries with shift
+	for i := range r.toc {
+		r.toc[i].PageNum += totalShift
+		// Decrement by 1 because we started at Page 1, but technically content starts after TOC?
+		// No, if Pass 1 said "Introduction is on Page 1", and we have Cover(1)+TOC(1), then Intro is on Page 3.
+		// So Page 1 -> Page 3. Shift is +2. Correct.
 	}
 
-	pdf.AddPage() // Page 2: Table of Contents
-	r.renderHeader("TABLE OF CONTENTS")
+	// --- Pass 2: Final Rendering (after shift applied) ---
+	// Reset PDF
+	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+	pdf.AddTTFFont("malgun", r.fontPath)
+	pdf.SetFont("malgun", "", 11)
+	r.pdf = pdf
+	r.pageCount = 0
+
+	pdf.AddPage() // Page 1: Cover
+	r.renderCover()
+
+	// TOC Pages
+	// Note: calculateTOCPages only calculates count. We need to actually render.
+	// Since we shifted the numbers in r.toc, renderTOC will show correct numbers.
+
+	// Force page count sync
+	r.pageCount = 1 // Cover done
+
+	pdf.AddPage()
+	r.pageCount++
+	r.renderHeader("목차")
 	r.renderFooter()
+	r.renderTOC() // This handles multi-page TOC and increments r.pageCount
 
-	r.renderTOC()
-
-	// Set correct page count for content start
-	r.pageCount = 2 + tocPages
-	pdf.AddPage()                  // Start Content
-	r.renderHeader("INTRODUCTION") // Default start
+	// Content
+	pdf.AddPage()
+	r.pageCount++
+	r.renderHeader("INTRODUCTION")
 	r.renderFooter()
-
 	pdf.SetY(r.marginT)
+
 	r.renderNode(doc, data)
 
 	pdf.WritePdf(*output)
 	fmt.Printf("Successfully generated: %s\n", *output)
 }
 
-func (r *PDFRenderer) simulateTOC(n ast.Node, source []byte) {
-	r.pageCount = 3
-	currentY := r.marginT
-
-	ast.Walk(n, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
-		if !entering {
-			return ast.WalkContinue, nil
-		}
-
-		if h, ok := node.(*ast.Heading); ok {
-			title := string(h.Text(source))
-			r.toc = append(r.toc, TOCEntry{
-				Level:   h.Level,
-				Title:   title,
-				PageNum: r.pageCount,
-			})
-			height := 40.0
-			if currentY+height > 841.89-r.marginB {
-				r.pageCount++
-				currentY = r.marginT
-			}
-			currentY += height
-		} else if _, ok := node.(*ast.Paragraph); ok {
-			height := 60.0 // Simplified fixed height per paragraph for simulation
-			if currentY+height > 841.89-r.marginB {
-				r.pageCount++
-				currentY = r.marginT
-			}
-			currentY += height
-		}
-		return ast.WalkContinue, nil
-	})
-}
+// simulateTOC removed in favor of 2-Pass renderNode
 
 func (r *PDFRenderer) renderCover() {
 	// Cover layout based on sample.html
@@ -365,6 +434,15 @@ func (r *PDFRenderer) renderNode(n ast.Node, source []byte) {
 
 			// Update current section title
 			r.currentTitle = string(node.Text(source))
+
+			// Record for TOC (Only if it's Pass 1)
+			if r.isDryRun {
+				r.toc = append(r.toc, TOCEntry{
+					Level:   node.Level,
+					Title:   string(node.Text(source)),
+					PageNum: r.pageCount,
+				})
+			}
 		case *ast.Paragraph:
 			r.checkPageBreak(60, "")
 			r.setPrimaryColor()

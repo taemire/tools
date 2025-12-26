@@ -38,7 +38,11 @@ if not exist "%TOOL_DIR%\cmd\pdf_analyzer\pdf_analyzer.exe" (
 set INPUT_PATH=
 set OUTPUT_PATH=
 set TITLE=
+set SUBTITLE=
 set VERSION=
+set AUTHOR=
+set HEADER=
+set FOOTER=
 set CONFIG_FILE=
 set TEMPLATE=report
 set SKIP_PAGES=0
@@ -49,7 +53,11 @@ if "%~1"=="" goto :check_args
 if /i "%~1"=="-i" set INPUT_PATH=%~2& shift& shift& goto :parse_args
 if /i "%~1"=="-o" set OUTPUT_PATH=%~2& shift& shift& goto :parse_args
 if /i "%~1"=="-title" set "TITLE=%~2"& shift& shift& goto :parse_args
+if /i "%~1"=="-subtitle" set "SUBTITLE=%~2"& shift& shift& goto :parse_args
 if /i "%~1"=="-version" set "VERSION=%~2"& shift& shift& goto :parse_args
+if /i "%~1"=="-author" set "AUTHOR=%~2"& shift& shift& goto :parse_args
+if /i "%~1"=="-header" set "HEADER=%~2"& shift& shift& goto :parse_args
+if /i "%~1"=="-footer" set "FOOTER=%~2"& shift& shift& goto :parse_args
 if /i "%~1"=="-config" set "CONFIG_FILE=%~2"& shift& shift& goto :parse_args
 if /i "%~1"=="-c" set "CONFIG_FILE=%~2"& shift& shift& goto :parse_args
 if /i "%~1"=="-template" set "TEMPLATE=%~2"& shift& shift& goto :parse_args
@@ -67,7 +75,11 @@ if "!INPUT_PATH!"=="" (
     echo   -i          Input directory with markdown files
     echo   -o          Output file path ^(without extension^)
     echo   -title      Document title
+    echo   -subtitle   Document subtitle
     echo   -version    Document version
+    echo   -author     Author name
+    echo   -header     Header text
+    echo   -footer     Footer text
     echo   -c/-config  AUTHORS.yml config file
     echo   -template   Template name ^(default: report^)
     echo   -skip       Pages to skip for PDF analysis ^(default: 0 = auto-detect^)
@@ -106,14 +118,17 @@ echo.
 :: ==============================================================================
 echo [PASS 1] Generating initial PDF...
 
-set MD2HTML_CMD="%TOOL_DIR%\md2html_v2.exe" -i "!INPUT_PATH!" -o "!HTML_PASS1!" -template "!TEMPLATE!"
-set MD2HTML_CMD=!MD2HTML_CMD! -sections-json "!SECTIONS_JSON!"
-if defined CONFIG_FILE set MD2HTML_CMD=!MD2HTML_CMD! -c "!CONFIG_FILE!"
-if defined TITLE set MD2HTML_CMD=!MD2HTML_CMD! -title "!TITLE!"
-if defined VERSION set MD2HTML_CMD=!MD2HTML_CMD! -version "!VERSION!"
+set MD2HTML_CMD1="%TOOL_DIR%\md2html_v2.exe" -i "!INPUT_PATH!" -o "!HTML_PASS1!" -template "!TEMPLATE!" -sections-json "!SECTIONS_JSON!"
+if defined CONFIG_FILE set MD2HTML_CMD1=!MD2HTML_CMD1! -c "!CONFIG_FILE!"
+if defined TITLE set MD2HTML_CMD1=!MD2HTML_CMD1! -title "!TITLE!"
+if defined SUBTITLE set MD2HTML_CMD1=!MD2HTML_CMD1! -subtitle "!SUBTITLE!"
+if defined VERSION set MD2HTML_CMD1=!MD2HTML_CMD1! -version "!VERSION!"
+if defined AUTHOR set MD2HTML_CMD1=!MD2HTML_CMD1! -author "!AUTHOR!"
+if defined HEADER set MD2HTML_CMD1=!MD2HTML_CMD1! -header "!HEADER!"
+if defined FOOTER set MD2HTML_CMD1=!MD2HTML_CMD1! -footer "!FOOTER!"
 
-echo [PASS 1] Running: !MD2HTML_CMD!
-call !MD2HTML_CMD!
+echo [PASS 1] Running: !MD2HTML_CMD1!
+call !MD2HTML_CMD1!
 if !ERRORLEVEL! NEQ 0 (
     echo [ERROR] Pass 1 HTML generation failed
     exit /b 1
@@ -150,7 +165,11 @@ set MD2HTML_CMD2="%TOOL_DIR%\md2html_v2.exe" -i "!INPUT_PATH!" -o "!HTML_OUT!" -
 set MD2HTML_CMD2=!MD2HTML_CMD2! -pages-json "!PAGES_JSON!"
 if defined CONFIG_FILE set MD2HTML_CMD2=!MD2HTML_CMD2! -c "!CONFIG_FILE!"
 if defined TITLE set MD2HTML_CMD2=!MD2HTML_CMD2! -title "!TITLE!"
+if defined SUBTITLE set MD2HTML_CMD2=!MD2HTML_CMD2! -subtitle "!SUBTITLE!"
 if defined VERSION set MD2HTML_CMD2=!MD2HTML_CMD2! -version "!VERSION!"
+if defined AUTHOR set MD2HTML_CMD2=!MD2HTML_CMD2! -author "!AUTHOR!"
+if defined HEADER set MD2HTML_CMD2=!MD2HTML_CMD2! -header "!HEADER!"
+if defined FOOTER set MD2HTML_CMD2=!MD2HTML_CMD2! -footer "!FOOTER!"
 
 call !MD2HTML_CMD2!
 if !ERRORLEVEL! NEQ 0 (

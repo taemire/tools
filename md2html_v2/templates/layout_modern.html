@@ -136,6 +136,12 @@
             font-weight: 300;
         }
 
+        .cover .version {
+            font-size: 1rem;
+            color: var(--muted);
+            margin-top: 5px;
+        }
+
         .cover-info {
             margin-top: auto;
             width: 100%;
@@ -721,9 +727,12 @@
 
     <!-- 1. Cover Page -->
     <div class="page cover">
-        <div class="cover-tag">{{if .Subtitle}}{{.Subtitle}}{{else}}DOCUMENTATION{{end}}</div>
+        <div class="cover-tag">{{if .Header}}{{.Header}}{{else}}DOCUMENTATION{{end}}</div>
         <h1>{{.Title}}</h1>
-        <p class="subtitle">Version {{.Version}}</p>
+        {{if .Subtitle}}
+        <div class="subtitle">{{.Subtitle}}</div>
+        {{end}}
+        <p class="version">Version {{.Version}}</p>
 
         <div class="cover-info">
             <p><strong>Date:</strong> {{.Date}}</p>

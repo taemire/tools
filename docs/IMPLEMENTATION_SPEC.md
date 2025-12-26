@@ -1,8 +1,8 @@
 # 제품 구현 명세서 (Implementation Specification)
 
 **프로젝트**: Common Development Tools (tools)  
-**버전**: 0.1.0  
-**최종 갱신**: 2025-12-25
+**버전**: 0.1.2  
+**최종 갱신**: 2025-12-26
 
 ---
 
@@ -15,7 +15,8 @@
 5. [md2pdf_v2.bat - 2-Pass PDF 생성기](#5-md2pdf_v2bat---2-pass-pdf-생성기)
 6. [mp4towebp.bat - 동영상 변환 도구](#6-mp4towebpbat---동영상-변환-도구)
 7. [check_version.bat - Git 버전 조회 도구](#7-check_versionbat---git-버전-조회-도구)
-8. [지원 템플릿](#8-지원-템플릿)
+8. [md2pdf_v2 - Direct Markdown to PDF 변환기](#8-md2pdf_v2---direct-markdown-to-pdf-변환기)
+9. [지원 템플릿](#9-지원-템플릿)
 
 ---
 
@@ -251,10 +252,14 @@ PDF 파일을 분석하여 각 섹션이 어느 페이지에 위치하는지 추
 
 ### 4.2 주요 기능
 
-#### 4.2.1 목차 자동 감지 ✨ (v0.1.0)
-- **자동 모드** (`-skip 0` 또는 `-skip -1`):
-  - 페이지 2부터 스캔하여 첫 번째 섹션이 나타나는 페이지를 찾음
-  - 본문 시작 페이지 - 1 = 목차 끝 페이지로 계산
+#### 4.2.1 목차 자동 감지 ✨ (v0.1.1 고도화)
+- **동적 휴리스틱 감지** (`-skip 0` 또는 `-skip -1`):
+  - 단순히 첫 섹션 제목을 찾는 것을 넘어, 페이지의 성격(목차 vs 본문)을 분석
+  - **판단 기준**:
+    - **섹션 밀도**: 한 페이지에 너무 많은 섹션 제목이 있으면 목차로 판단
+    - **텍스트-섹션 비율**: 섹션 제목 하나당 텍스트 설명이 충분한지 확인
+    - **점선 패턴**: 목차 특유의 도트 리더(`......`) 패턴 개수 확인
+    - **최소 텍스트 길이**: 본문 페이지로서의 최소 실질 텍스트량 검증
   - 감지 실패 시 기본값 3 사용 (표지 1p + 목차 2p)
 - **수동 모드** (`-skip N`, N > 0):
   - 지정된 페이지 수만큼 건너뛰고 검색 시작
@@ -296,55 +301,74 @@ pdf_analyzer.exe -i document.pdf -sections sections.json -skip 3 -offset 1 -o pa
 
 ### 4.4 구현 상세
 
-#### 4.4.1 목차 자동 감지 알고리즘
+#### 4.4.1 목차 자동 감지 알고리즘 (Heuristic)
 ```go
 func detectTocEndPage(sections []SectionPage, r *pdf.Reader) int {
-    if len(sections) == 0 {
-        return 0
-    }
-    
-    totalPages := r.NumPage()
-    // 페이지 2부터 스캔 시작 (페이지 1은 항상 표지로 가정)
+    // ... Skip pages 2 to totalPages
     for pageNum := 2; pageNum <= totalPages; pageNum++ {
-        page := r.Page(pageNum)
-        text, err := page.GetPlainText(nil)
-        if err != nil {
-            continue
-        }
+        text, _ := page.GetPlainText(nil)
         
-        // 첫 번째 섹션을 찾으면 본문 시작으로 판단
-        if containsTitle(text, sections[0].Title) {
+        // 첫 번째 섹션 제목이 이 페이지에 있고, 
+        // 본문 페이지 휴리스틱(isBodyPage)을 통과하면 본문 시작으로 판단
+        if containsTitle(text, sections[0].Title) && isBodyPage(text, sections) {
             tocEndPage := pageNum - 1
             return tocEndPage
         }
     }
-    
-    // 첫 섹션을 찾지 못한 경우
     return 0
 }
 ```
 
-#### 4.4.2 제목 매칭 함수
+#### 4.4.2 본문 페이지 판별 휴리스틱
 ```go
-func containsTitle(text, title string) bool {
-    text = strings.TrimSpace(text)
-    title = strings.TrimSpace(title)
+func isBodyPage(text string, sections []SectionPage) bool {
+    // 1. 점선 패턴 카운트 (목차 특유 패턴)
+    dotMatches := regexp.MustCompile(`\.{2,}|·{2,}|…{1,}`).FindAllString(text, -1)
     
-    // 직접 매칭
-    if strings.Contains(text, title) {
-        return true
-    }
+    // 2. 섹션 밀도 확인 (한 페이지에 제목이 너무 많으면 목차)
+    if sectionCount > 5 { return false }
     
-    // 숫자 접두사 제거 후 매칭 (예: "1. 설치 및 설정" -> "설치 및 설정")
-    re := regexp.MustCompile(`^\d+\.\s*`)
-    cleanTitle := re.ReplaceAllString(title, "")
-    if cleanTitle != title && strings.Contains(text, cleanTitle) {
-        return true
-    }
+    // 3. 텍스트-섹션 비율 (제목만 나열되면 목차)
+    if sectionCount > 0 && (textLength / sectionCount) < 150 { return false }
     
-    return false
+    // 4. 점선이 많으면 목차
+    if dotMatches > 5 { return false }
+    
+    return textLength > 700
 }
 ```
+
+#### 4.4.3 제목 매칭 함수
+// containsTitle는 텍스트에서 제목을 찾음 (숫자 접두사 및 특수문자 무시)
+func containsTitle(text, title string) bool {
+    // 정규화: 공백 정리
+    text = strings.TrimSpace(text)
+    title = strings.TrimSpace(title)
+
+    // 이모지 및 특수문자 제거 로직 (추출 과정에서 유실될 수 있음)
+    stripSpecial := func(s string) string {
+        // 한글, 영문, 숫자만 남김
+        reg := regexp.MustCompile(`[^a-zA-Z0-9가-힣\s\[\]\(\)\-_]`)
+        return reg.ReplaceAllString(s, "")
+    }
+
+    cleanText := stripSpecial(text)
+    cleanTitle := stripSpecial(title)
+
+    // 직접 매칭
+    if strings.Contains(cleanText, cleanTitle) {
+        return true
+    }
+
+    // 숫자 접두사 제거 후 매칭 (예: "1. 설치 및 설정" -> "설치 및 설정")
+    re := regexp.MustCompile(`^\d+\.\s*`)
+    noNumberTitle := re.ReplaceAllString(cleanTitle, "")
+    if noNumberTitle != cleanTitle && strings.Contains(cleanText, noNumberTitle) {
+        return true
+    }
+
+    return false
+}
 
 ### 4.5 주요 데이터 구조
 
@@ -407,7 +431,11 @@ md2pdf_v2.bat -i docs -o output -skip 4 -offset 2
 | `-i` | ✅ | - | 입력 Markdown 디렉터리 |
 | `-o` | ✅ | - | 출력 파일 경로 (확장자 제외) |
 | `-title` | ❌ | - | 문서 제목 |
+| `-subtitle` | ❌ | - | 문서 부제 |
 | `-version` | ❌ | - | 문서 버전 |
+| `-author` | ❌ | - | 작성자 |
+| `-header` | ❌ | - | 헤더 텍스트 |
+| `-footer` | ❌ | - | 푸터 텍스트 |
 | `-c` / `-config` | ❌ | - | AUTHORS.yml 설정 파일 경로 |
 | `-template` | ❌ | `report` | 템플릿 이름 |
 | `-skip` | ❌ | `0` | 목차 페이지 수 (0 = 자동 감지) |
@@ -524,7 +552,31 @@ check_version.bat -n 20
 
 ---
 
-## 8. 지원 템플릿
+## 8. md2pdf_v2 - Direct Markdown to PDF 변환기
+
+### 8.1 개요
+Chrome 엔진 없이 `gopdf` 라이브러리를 사용하여 마크다운을 직접 PDF로 변환하는 경량 도구입니다.
+
+### 8.2 핵심 알고리즘: 2-Pass Rendering
+브라우저와 달리 PDF 라이브러리는 렌더링 전에는 페이지 번호를 알 수 없으므로, 내부적으로 두 번의 렌더링 과정을 거칩니다.
+
+1. **Pass 1 (Simulation)**:
+    - 메모리 상의 PDF 컨텍스트에서 전체 마크다운을 가상 렌더링합니다.
+    - 각 헤딩(H1, H2)이 배치되는 실제 페이지 번호를 기록합니다.
+2. **목차 생성**:
+    - Pass 1에서 수집된 정확한 페이지 번호를 사용하여 목차를 구성합니다.
+3. **Pass 2 (Final Render)**:
+    - 수집된 페이지 번호가 포함된 목차를 먼저 렌더링합니다.
+    - 이어서 본문 콘텐츠를 최종 PDF 파일로 생성합니다.
+
+### 8.3 주요 특징
+- **의존성 제거**: 브라우저(Chrome) 설치가 필요 없는 Pure Go 구현
+- **정확한 TOC**: 시뮬레이션 패스를 통해 100% 일치하는 페이지 번호 보장
+- **커스터마이징**: `gopdf`를 이용한 세밀한 레이아웃 제어 가능
+
+---
+
+## 9. 지원 템플릿
 
 ### 8.1 default (layout.html)
 - **용도**: 일반 문서, 간단한 매뉴얼
@@ -678,6 +730,6 @@ md2pdf_v2.bat -i examples\sample_manual -o test_output
 
 ---
 
-**최종 갱신일**: 2025-12-25  
-**작성자**: AI Agent (Antigravity)  
-**버전**: 0.1.0
+**최종 갱신일**: 2025-12-26  
+**작성자**: 장민석 TSGroup / AI Agent (Antigravity)  
+**버전**: 0.1.2
