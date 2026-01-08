@@ -1,4 +1,4 @@
-# 제품 구현 명세서 (Implementation Specification)
+﻿# 제품 구현 명세서 (Implementation Specification)
 
 **프로젝트**: Common Development Tools (tools)  
 **버전**: 0.1.2  
@@ -14,7 +14,7 @@
 4. [pdf_analyzer - PDF 섹션 분석기](#4-pdf_analyzer---pdf-섹션-분석기)
 5. [md2pdf_v2.bat - 2-Pass PDF 생성기](#5-md2pdf_v2bat---2-pass-pdf-생성기)
 6. [mp4towebp.bat - 동영상 변환 도구](#6-mp4towebpbat---동영상-변환-도구)
-7. [check_version.bat - Git 버전 조회 도구](#7-check_versionbat---git-버전-조회-도구)
+7. [revlog.bat - Git 버전 조회 도구](#7-revlogbat---git-버전-조회-도구)
 8. [md2pdf_v2 - Direct Markdown to PDF 변환기](#8-md2pdf_v2---direct-markdown-to-pdf-변환기)
 9. [지원 템플릿](#9-지원-템플릿)
 
@@ -31,7 +31,7 @@
 - **pdf_analyzer**: PDF 분석 및 섹션 페이지 번호 추출
 - **md2pdf_v2.bat**: 2-Pass PDF 생성 파이프라인
 - **mp4towebp.bat**: MP4 동영상을 WebP 애니메이션으로 변환
-- **check_version.bat**: Git 히스토리 및 태그 조회
+- **revlog.bat**: Git 히스토리 및 태그 조회
 
 ### 1.3 기술 스택
 - **언어**: Go 1.21+, Windows Batch Script
@@ -521,7 +521,7 @@ if not exist "%FFMPEG_EXE%" (
 
 ---
 
-## 7. check_version.bat - Git 버전 조회 도구
+## 7. revlog.bat - Git 버전 조회 도구
 
 ### 7.1 개요
 Git 리포지토리의 커밋 히스토리 및 태그 정보를 직관적으로 조회합니다.
@@ -535,12 +535,12 @@ Git 리포지토리의 커밋 히스토리 및 태그 정보를 직관적으로 
 
 #### 7.3.1 기본 사용 (최근 10개 커밋)
 ```batch
-check_version.bat
+revlog.bat
 ```
 
 #### 7.3.2 커밋 수 지정
 ```batch
-check_version.bat -n 20
+revlog.bat -n 20
 ```
 
 ### 7.4 출력 형식

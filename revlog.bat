@@ -73,25 +73,27 @@ if "%SHOW_FULL%"=="1" goto :main_full
 :: Use PowerShell for smart formatting
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "$count = %COUNT%;" ^
-    "$log = git log --pretty=format:'%%h|%%s|%%ad' --date=format:'%%Y-%%m-%%d %%H:%%M:%%S' -n $count;" ^
+    "$log = @(git log --pretty=format:'%%h###SEP###%%s###SEP###%%ad' --date=format:'%%Y-%%m-%%d %%H:%%M:%%S' -n $count);" ^
     "$total = (git rev-list --count HEAD).Trim();" ^
     "$current = [int]$total;" ^
-    "$log | ForEach-Object {" ^
-        "$parts = $_ -split '\|';" ^
-        "$hash = $parts[0];" ^
-        "$desc = $parts[1];" ^
-        "$time = $parts[2];" ^
-        "$tag = (git tag --points-at $hash 2>$null) -join ', ';" ^
-        "if (-not $tag) { $tag = '-' };" ^
-        "[PSCustomObject]@{" ^
-            "Rev = 'r' + $current;" ^
-            "Tag = $tag;" ^
-            "Hash = $hash;" ^
-            "Time = $time;" ^
-            "Description = $desc" ^
-        "};" ^
-        "$current--;" ^
-    "} | Format-Table -AutoSize Rev, Tag, Hash, Time, Description | Out-String -Stream | Where-Object { $_.Trim() -ne '' }"
+    "$fmt = '{0,-8} {1,-10} {2,-7} {3,-19} {4}';" ^
+    "Write-Host ($fmt -f 'Rev', 'Tag', 'Hash', 'Time', 'Description');" ^
+    "Write-Host '---      ---        ----    ----                -----------';" ^
+    "foreach ($line in $log) {" ^
+        "if ([string]::IsNullOrWhiteSpace($line)) { continue };" ^
+        "$parts = $line -split '###SEP###';" ^
+        "if ($parts.Length -ge 3) {" ^
+            "$hash = $parts[0];" ^
+            "$desc = $parts[1];" ^
+            "$time = $parts[2];" ^
+            "$tag = (git tag --points-at $hash 2>$null) -join ', ';" ^
+            "if (-not $tag) { $tag = '-' };" ^
+            "if ($tag.Length -gt 9) { $tag = $tag.Substring(0, 8) + '.' };" ^
+            "$rev = 'r' + $current;" ^
+            "Write-Host ($fmt -f $rev, $tag, $hash, $time, $desc);" ^
+            "$current--;" ^
+        "}" ^
+    "}"
 
 echo.
 goto :footer

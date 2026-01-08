@@ -1,4 +1,4 @@
-# Common Development Tools (tools)
+﻿# Common Development Tools (tools)
 
 다양한 프로젝트(`tkcli`, `tkadmin`, `codesign_service`)에서 공통으로 사용되는 개발, 빌드, 문서화 도구 모음입니다.
 
@@ -6,7 +6,7 @@
 
 ### 1. html2pdf
 - **기능**: HTML 문서를 PDF로 변환 (Chrome/Chromium 기반)
-- **특징**: `check_version`과 달리 외부 브라우저 엔진(chromedp)을 사용하여 고품질 렌더링 지원.
+- **특징**: `revlog`과 달리 외부 브라우저 엔진(chromedp)을 사용하여 고품질 렌더링 지원.
 - **실행**: `html2pdf.exe`
 
 ### 2. md2html
@@ -14,9 +14,9 @@
 - **특징**: 커스텀 템플릿 지원, `_sidebar.md` 기반 네비게이션 생성.
 - **실행**: `md2html.exe`
 
-### 3. check_version.bat
+### 3. revlog.bat
 - **기능**: Git 리포지토리의 커밋 히스토리 및 태그 정보를 직관적으로 조회.
-- **사용법**: `check_version.bat [-n count]`
+- **사용법**: `revlog.bat [-n count]`
 
 ### 4. mp4towebp.bat
 - **기능**: MP4 동영상을 고효율 WebP 애니메이션으로 변환. (문서 첨부용)

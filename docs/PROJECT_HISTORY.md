@@ -1,4 +1,4 @@
-# 프로젝트 히스토리 (Project History)
+﻿# 프로젝트 히스토리 (Project History)
 
 이 문서는 `tools` 프로젝트의 주요 작업, 의사결정, 설계 변경 사항을 시간순으로 기록합니다.
 
@@ -50,7 +50,7 @@
 2. **도구 정리**:
    - `html2pdf`: CDP 로그 노이즈 억제 적용
    - `md2html`: Markdown → HTML 변환기 및 템플릿
-   - `check_version.bat`: Git 히스토리 및 태그 조회 스크립트
+   - `revlog.bat`: Git 히스토리 및 태그 조회 스크립트
    - `mp4towebp.bat`: FFmpeg 자동 다운로드 및 WebP 변환 스크립트
 3. **문서화**: CHANGELOG, ISSUES, 규칙 문서 작성
 
