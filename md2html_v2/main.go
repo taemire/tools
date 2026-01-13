@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	gohtml "html"
 	"mime"
 	"net/http"
 	"os"
@@ -74,6 +75,7 @@ type ManualConfig struct {
 }
 
 func main() {
+	// Parse flags.
 	inputDir := flag.String("i", "", "Input directory containing markdown files")
 	outputFile := flag.String("o", "", "Output HTML file path")
 
@@ -359,13 +361,18 @@ func parseSidebar(sidebarPath, baseDir string) ([]string, error) {
 	}
 
 	// Parse markdown links: [text](/path/to/file.md)
-	re := regexp.MustCompile(`\[([^\]]+)\]\((/[^)]+\.md)\)`)
+	// Parse markdown links: [text](/path/to/file.md) or [text](file.md)
+	// Group 1: Text
+	// Group 2: Optional path prefix (slash)
+	// Group 3: Filename/Path
+	re := regexp.MustCompile(`\[([^\]]+)\]\(((?:/)?)([^)]+\.md)\)`)
 	matches := re.FindAllStringSubmatch(string(content), -1)
 
 	var files []string
 	for _, match := range matches {
-		if len(match) >= 3 {
-			path := strings.TrimPrefix(match[2], "/")
+		if len(match) >= 4 {
+			// match[3] is the path without the optional leading slash
+			path := match[3]
 			fullPath := filepath.Join(baseDir, path)
 			if _, err := os.Stat(fullPath); err == nil {
 				files = append(files, fullPath)
@@ -442,6 +449,8 @@ func extractSubHeadings(htmlContent string) []SubHeading {
 			rawTitle := match[2]
 			// TOC에는 태그가 제거된 순수 텍스트만 표시
 			title := strings.TrimSpace(stripTags.ReplaceAllString(rawTitle, ""))
+			// HTML 엔티티(&amp; 등)를 일반 문자로 변환 (PDF 분석 매칭용)
+			title = gohtml.UnescapeString(title)
 
 			// "Q."로 시작하는 FAQ 항목은 목차에서 제외
 			if strings.HasPrefix(title, "Q.") || strings.HasPrefix(title, "Q ") {

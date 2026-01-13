@@ -45,7 +45,7 @@ func main() {
 	sectionsJSON := flag.String("sections", "", "JSON array of section titles to find (or file path)")
 	outputJSON := flag.String("o", "", "Output JSON file (optional, defaults to stdout)")
 	skipPages := flag.Int("skip", 0, "Number of pages to skip from the beginning (0 or -1 = auto-detect, positive number = manual)")
-	pageOffset := flag.Int("offset", 0, "Page number offset (subtract from physical page number, 0=no adjustment, 1=cover not counted)")
+	// pageOffset := flag.Int("offset", 0, "Page number offset (subtract from physical page number, 0=no adjustment, 1=cover not counted)")
 	flag.Parse()
 
 	if *pdfPath == "" {
@@ -151,10 +151,12 @@ func main() {
 			if sections[i].Page == 0 { // 아직 찾지 못한 경우
 				// 제목이 페이지에 있는지 확인
 				if containsTitle(text, sections[i].Title) {
-					// 문서 페이지 번호 = 물리적 페이지 번호 - 오프셋 (표지가 페이지 카운터에 포함되지 않음)
-					docPageNum := pageNum - *pageOffset
+					// 문서 페이지 번호 = 물리적 페이지 번호 - 건너뛴 페이지 수 (목차 등)
+					// CSS counter-reset: page 1이 본문 시작 시점에 적용되므로,
+					// 물리적 페이지 3(본문 시작) - 건너뛴 2페이지(표지+목차) = 1페이지가 됨
+					docPageNum := pageNum - actualSkipPages
 					sections[i].Page = docPageNum
-					fmt.Fprintf(os.Stderr, "[FOUND] '%s' on page %d (physical: %d)\n", sections[i].Title, docPageNum, pageNum)
+					fmt.Fprintf(os.Stderr, "[FOUND] '%s' on page %d (physical: %d, skipped: %d)\n", sections[i].Title, docPageNum, pageNum, actualSkipPages)
 				}
 			}
 		}

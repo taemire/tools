@@ -15,6 +15,7 @@ setlocal enabledelayedexpansion
 ::   -version <text> : Version string
 ::   -author <text>  : Author name
 ::   -template <name>: Template name (default: report)
+::   -h, --help      : Show this help message
 ::
 :: Example:
 ::   md2pdf.bat -i docs\manual -o dist\User_Manual -title "My App" -version 1.0
@@ -39,6 +40,8 @@ set TEMPLATE=report
 
 :parse_args
 if "%~1"=="" goto :check_args
+if /i "%~1"=="-h" goto :show_help
+if /i "%~1"=="--help" goto :show_help
 if /i "%~1"=="-i" set INPUT_PATH=%~2& shift& shift& goto :parse_args
 if /i "%~1"=="-o" set OUTPUT_PATH=%~2& shift& shift& goto :parse_args
 if /i "%~1"=="-c" set "CONFIG_FILE=%~2"& shift& shift& goto :parse_args
@@ -50,6 +53,24 @@ if /i "%~1"=="-author" set "AUTHOR=%~2"& shift& shift& goto :parse_args
 if /i "%~1"=="-template" set "TEMPLATE=%~2"& shift& shift& goto :parse_args
 shift
 goto :parse_args
+
+:show_help
+echo Usage:
+echo   md2pdf.bat -i ^<input_path^> -o ^<output_file_path^> [options]
+echo.
+echo Options:
+echo   -i ^<path^>       : Input directory or file path (Markdown)
+echo   -o ^<path^>       : Output file path (without extension, or with .pdf/.html)
+echo   -title ^<text^>   : Document title
+echo   -subtitle ^<text^>: Document subtitle
+echo   -version ^<text^> : Version string
+echo   -author ^<text^>  : Author name
+echo   -template ^<name^>: Template name (default: report)
+echo   -h, --help      : Show this help message
+echo.
+echo Example:
+echo   md2pdf.bat -i docs\manual -o dist\User_Manual -title "My App" -version 1.0
+exit /b 0
 
 :build_md2html
 echo [TOOLS] md2html.exe not found. Building...

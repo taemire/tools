@@ -46,7 +46,7 @@ set FOOTER=
 set CONFIG_FILE=
 set TEMPLATE=report
 set SKIP_PAGES=0
-set PAGE_OFFSET=1
+set PAGE_OFFSET=0
 
 :parse_args
 if "%~1"=="" goto :check_args
@@ -150,7 +150,8 @@ echo.
 echo [PASS 2] Analyzing PDF for page numbers...
 
 :: Run PDF analyzer
-"%TOOL_DIR%\cmd\pdf_analyzer\pdf_analyzer.exe" -i "!PDF_PASS1!" -sections "!SECTIONS_JSON!" -skip !SKIP_PAGES! -offset !PAGE_OFFSET! -o "!PAGES_JSON!"
+:: Run PDF analyzer
+"%TOOL_DIR%\cmd\pdf_analyzer\pdf_analyzer.exe" -i "!PDF_PASS1!" -sections "!SECTIONS_JSON!" -skip !SKIP_PAGES! -o "!PAGES_JSON!"
 if !ERRORLEVEL! NEQ 0 (
     echo [WARN] PDF analysis failed, continuing without page numbers
     copy /y "!PDF_PASS1!" "!PDF_OUT!" >nul
