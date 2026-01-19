@@ -73,26 +73,45 @@ if "%SHOW_FULL%"=="1" goto :main_full
 :: Use PowerShell for smart formatting
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "$count = %COUNT%;" ^
-    "$log = @(git log --pretty=format:'%%h###SEP###%%s###SEP###%%ad' --date=format:'%%Y-%%m-%%d %%H:%%M:%%S' -n $count);" ^
+    "$rawLog = @(git log --pretty=format:'%%h###SEP###%%s###SEP###%%ad###SEP###%%D' --date=format:'%%Y-%%m-%%d %%H:%%M:%%S' -n $count);" ^
     "$total = (git rev-list --count HEAD).Trim();" ^
     "$current = [int]$total;" ^
-    "$fmt = '{0,-8} {1,-10} {2,-7} {3,-19} {4}';" ^
-    "Write-Host ($fmt -f 'Rev', 'Tag', 'Hash', 'Time', 'Description');" ^
-    "Write-Host '---      ---        ----    ----                -----------';" ^
-    "foreach ($line in $log) {" ^
+    "$entries = @();" ^
+    "$maxTagLen = 3;" ^
+    "$maxRevLen = ('r' + $total).Length;" ^
+    "if ($maxRevLen -lt 3) { $maxRevLen = 3 };" ^
+    ^
+    "foreach ($line in $rawLog) {" ^
         "if ([string]::IsNullOrWhiteSpace($line)) { continue };" ^
         "$parts = $line -split '###SEP###';" ^
-        "if ($parts.Length -ge 3) {" ^
+        "if ($parts.Length -ge 4) {" ^
             "$hash = $parts[0];" ^
             "$desc = $parts[1];" ^
             "$time = $parts[2];" ^
-            "$tag = (git tag --points-at $hash 2>$null) -join ', ';" ^
-            "if (-not $tag) { $tag = '-' };" ^
-            "if ($tag.Length -gt 9) { $tag = $tag.Substring(0, 8) + '.' };" ^
-            "$rev = 'r' + $current;" ^
-            "Write-Host ($fmt -f $rev, $tag, $hash, $time, $desc);" ^
+            "$refs = $parts[3];" ^
+            ^
+            "$tag = '-';" ^
+            "if ($refs) {" ^
+                "$tagMatches = $refs | Select-String -Pattern 'tag:\s*([^,]+)' -AllMatches;" ^
+                "if ($tagMatches) {" ^
+                    "$tags = @($tagMatches.Matches | ForEach-Object { $_.Groups[1].Value });" ^
+                    "$tag = $tags -join ', ';" ^
+                "}" ^
+            "}" ^
+            ^
+            "if ($tag.Length -gt $maxTagLen) { $maxTagLen = $tag.Length };" ^
+            "$entries += [PSCustomObject]@{ Rev = 'r' + $current; Tag = $tag; Hash = $hash; Time = $time; Desc = $desc };" ^
             "$current--;" ^
         "}" ^
+    "}" ^
+    ^
+    "$fmt = '{0,-' + $maxRevLen + '} {1,-' + $maxTagLen + '} {2,-7} {3,-19} {4}';" ^
+    "Write-Host ($fmt -f 'Rev', 'Tag', 'Hash', 'Time', 'Description');" ^
+    "$separator = '{0} {1} {2} {3} {4}' -f ('-'*$maxRevLen), ('-'*$maxTagLen), ('-'*7), ('-'*19), ('-'*30);" ^
+    "Write-Host $separator;" ^
+    ^
+    "foreach ($e in $entries) {" ^
+        "Write-Host ($fmt -f $e.Rev, $e.Tag, $e.Hash, $e.Time, $e.Desc);" ^
     "}"
 
 echo.

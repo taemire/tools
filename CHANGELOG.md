@@ -5,6 +5,10 @@
 ## [Unreleased]
 
 ### ✨ 기능 개선
+- **revlog.bat**: 태그 컬럼 시인성 개선
+  - 태그 길이 자동 감지 및 컬럼 너비 동적 조절 (Dynamic Column Width)
+  - 조회 시 태그 정보 로딩 속도 개선 (`git log --format=%D`)
+  - 구분선(`---`) 정렬 자동 보정
 - **pdf_analyzer**: 목차 페이지 자동 감지 기능 고도화 (Heuristic-based Detection)
   - 텍스트 추출 시 특수문자 및 이모지 무시 로직 추가 (`containsTitle` 개선)
   - 섹션 밀도(Section Density), 텍스트 길이, 점선 패턴(Dot Leader) 등을 종합 분석
@@ -27,7 +31,14 @@
 - **pdf_analyzer**: 목차 페이지의 섹션 제목을 본문으로 오인하여 모든 페이지 번호가 1~2로 고정되던 이슈 수정
   - 섹션 밀도 분석(isBodyPage)을 통해 목차 내의 텍스트와 본문 내의 헤딩을 정확히 구분하도록 개선
 
+### 🐛 버그 수정 (Fixes)
+- **layout_report.html**: 페이지 번호 재설정 오류 수정 (Isolated Counters Strategy 적용)
+  - 렌더러의 페이지 리셋 제한을 우회하기 위해 `page-toc`와 `page-main` 카운터를 분리
+  - 목차(**i**)와 본문(**1**)이 물리적 페이지 흐름과 무관하게 독립적으로 1부터 시작하도록 개선
+- **md2pdf_v2.bat**: CLI 도움말(`-h`, `--help`) 지원 추가
+
 ### 📝 문서화
+- **PDF_PAGE_NUMBERING_TROUBLESHOOTING.md**: 페이지 번호 문제 해결 과정에 대한 상세 기술 회고록 추가
 - **.agent/rules.md**: UI 목업 및 스타일링 규칙 추가
   - CSS 중앙 관리 원칙
   - 템플릿 순수성 원칙
