@@ -88,6 +88,7 @@ func main() {
 	flag.StringVar(&templateName, "template", "default", "Template name")
 	flag.StringVar(&templateName, "t", "default", "Template name (shorthand)")
 	embedImgs := flag.Bool("embed", true, "Embed images as Base64")
+	pdfMode := flag.Bool("pdf-mode", false, "Rewrite .md links to internal anchors for PDF")
 
 	showVersion := flag.Bool("v", false, "Show version")
 
@@ -235,6 +236,9 @@ func main() {
 
 		htmlContent = processUIComponents(htmlContent, file)
 		htmlContent = rewriteAssetPaths(htmlContent)
+		if *pdfMode {
+			htmlContent = rewriteInternalLinks(htmlContent)
+		}
 
 		// Extract title and level from first heading
 		titleText, level := extractTitle(string(content))
@@ -578,6 +582,57 @@ func rewriteAssetPaths(html string) string {
 	// Pattern: src="../../assets/..." -> src="assets/..."
 	re := regexp.MustCompile(`src="(?:\.\./)+assets/`)
 	return re.ReplaceAllString(html, `src="assets/`)
+}
+
+// rewriteInternalLinks converts relative .md links to internal PDF anchors
+// Example: href="./02_service_mgmt.md#section" → href="#section"
+// Example: href="./01_basics.md" → href="#31-기본-시스템-관리" (uses heading ID heuristic)
+// External links (http/https) are preserved
+func rewriteInternalLinks(htmlContent string) string {
+	// Pattern: href="./path/to/file.md#anchor" or href="/path/file.md#anchor"
+	re := regexp.MustCompile(`href="\.?/?([^"]*\.md)(#[^"]*)?"`)
+
+	return re.ReplaceAllStringFunc(htmlContent, func(match string) string {
+		subMatch := re.FindStringSubmatch(match)
+		if len(subMatch) < 2 {
+			return match
+		}
+
+		// Extract anchor part (#...)
+		anchor := ""
+		if len(subMatch) >= 3 && subMatch[2] != "" {
+			anchor = subMatch[2]
+		}
+
+		if anchor != "" {
+			// Has explicit anchor, use it directly
+			return fmt.Sprintf(`href="%s"`, anchor)
+		}
+
+		// No anchor - extract filename and create section-based anchor
+		// Example: 01_basics.md → 31-기본-시스템-관리 (based on actual heading IDs)
+		mdPath := subMatch[1]
+		baseName := filepath.Base(mdPath)
+		baseName = strings.TrimSuffix(baseName, ".md")
+
+		// Map known files to their heading IDs (goldmark generates these)
+		// Note: Goldmark strips Korean characters, leaving only numbers and English
+		headingMap := map[string]string{
+			"01_basics":         "31---",
+			"02_service_mgmt":   "32---service",
+			"03_monitoring":     "33----monitoring",
+			"04_backup_restore": "34----backuprestore",
+			"05_environment":    "35---env",
+			"06_security":       "36----security-analysis--remediation",
+		}
+
+		if anchor, exists := headingMap[baseName]; exists {
+			return fmt.Sprintf(`href="#%s"`, anchor)
+		}
+
+		// Fallback: use lowercase filename as anchor
+		return fmt.Sprintf(`href="#%s"`, strings.ToLower(baseName))
+	})
 }
 
 //go:embed templates/*.html

@@ -118,7 +118,7 @@ echo.
 :: ==============================================================================
 echo [PASS 1] Generating initial PDF...
 
-set MD2HTML_CMD1="%TOOL_DIR%\md2html_v2.exe" -i "!INPUT_PATH!" -o "!HTML_PASS1!" -template "!TEMPLATE!" -sections-json "!SECTIONS_JSON!"
+set MD2HTML_CMD1="%TOOL_DIR%\md2html_v2.exe" -i "!INPUT_PATH!" -o "!HTML_PASS1!" -template "!TEMPLATE!" -sections-json "!SECTIONS_JSON!" --pdf-mode
 if defined CONFIG_FILE set MD2HTML_CMD1=!MD2HTML_CMD1! -c "!CONFIG_FILE!"
 if defined TITLE set MD2HTML_CMD1=!MD2HTML_CMD1! -title "!TITLE!"
 if defined SUBTITLE set MD2HTML_CMD1=!MD2HTML_CMD1! -subtitle "!SUBTITLE!"
@@ -162,7 +162,7 @@ echo [PASS 2] Page numbers extracted to: !PAGES_JSON!
 
 :: Regenerate HTML with page numbers
 echo [PASS 2] Regenerating HTML with page numbers...
-set MD2HTML_CMD2="%TOOL_DIR%\md2html_v2.exe" -i "!INPUT_PATH!" -o "!HTML_OUT!" -template "!TEMPLATE!"
+set MD2HTML_CMD2="%TOOL_DIR%\md2html_v2.exe" -i "!INPUT_PATH!" -o "!HTML_OUT!" -template "!TEMPLATE!" --pdf-mode
 set MD2HTML_CMD2=!MD2HTML_CMD2! -pages-json "!PAGES_JSON!"
 if defined CONFIG_FILE set MD2HTML_CMD2=!MD2HTML_CMD2! -c "!CONFIG_FILE!"
 if defined TITLE set MD2HTML_CMD2=!MD2HTML_CMD2! -title "!TITLE!"

@@ -122,7 +122,7 @@ echo [DOCS] Converting Markdown to HTML...
 echo   - Input: !INPUT_PATH!
 echo   - Output: !HTML_OUT!
 
-set MD2HTML_CMD="%TOOL_DIR%\md2html.exe" -i "!INPUT_PATH!" -o "!HTML_OUT!" -template "!TEMPLATE!"
+set MD2HTML_CMD="%TOOL_DIR%\md2html.exe" -i "!INPUT_PATH!" -o "!HTML_OUT!" -template "!TEMPLATE!" --pdf-mode
 if defined CONFIG_FILE set MD2HTML_CMD=!MD2HTML_CMD! -c "!CONFIG_FILE!"
 if defined TITLE set MD2HTML_CMD=!MD2HTML_CMD! -title "!TITLE!"
 if defined SUBTITLE set MD2HTML_CMD=!MD2HTML_CMD! -subtitle "!SUBTITLE!"

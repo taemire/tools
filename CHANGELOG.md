@@ -5,6 +5,10 @@
 ## [Unreleased]
 
 ### ✨ 기능 개선
+- **md2html**: PDF 변환 시 내부 링크 자동 변환 (`--pdf-mode`)
+  - 상대 경로 링크(`.md#anchor`)를 PDF 내부 앵커(`#section-id`)로 변환
+  - HTML 단독 사용 시 기존 링크 유지 (Docsify/브라우저 호환)
+- **md2pdf.bat**: `md2html` 호출 시 `--pdf-mode` 자동 적용
 - **revlog.bat**: 태그 컬럼 시인성 개선
   - 태그 길이 자동 감지 및 컬럼 너비 동적 조절 (Dynamic Column Width)
   - 조회 시 태그 정보 로딩 속도 개선 (`git log --format=%D`)

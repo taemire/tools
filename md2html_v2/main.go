@@ -10,6 +10,7 @@ import (
 	gohtml "html"
 	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -95,6 +96,7 @@ func main() {
 	flag.StringVar(&templateName, "template", "default", "Template name")
 	flag.StringVar(&templateName, "t", "default", "Template name (shorthand)")
 	embedImgs := flag.Bool("embed", true, "Embed images as Base64")
+	pdfMode := flag.Bool("pdf-mode", false, "Rewrite .md links to internal anchors for PDF")
 
 	// 2-Pass PDF 생성 옵션
 	sectionsJSONOut := flag.String("sections-json", "", "Output sections list as JSON (for 2-pass PDF)")
@@ -255,6 +257,9 @@ func main() {
 
 		htmlContent = processUIComponents(htmlContent, file)
 		htmlContent = rewriteAssetPaths(htmlContent)
+		if *pdfMode {
+			htmlContent = rewriteInternalLinks(htmlContent)
+		}
 
 		// Extract title and level from first heading
 		titleText, level := extractTitle(string(content))
@@ -660,6 +665,89 @@ func rewriteAssetPaths(html string) string {
 	// Pattern: src="../../assets/..." -> src="assets/..."
 	re := regexp.MustCompile(`src="(?:\.\./)+assets/`)
 	return re.ReplaceAllString(html, `src="assets/`)
+}
+
+// rewriteInternalLinks converts relative .md links to internal PDF anchors
+// Example: href="./02_service_mgmt.md#section" → href="#section" (normalized)
+// Example: href="./01_basics.md" → href="#31---" (based on heading ID)
+// External links (http/https) are preserved
+func rewriteInternalLinks(htmlContent string) string {
+	// Pattern: href="./path/to/file.md#anchor" or href="/path/file.md#anchor"
+	re := regexp.MustCompile(`href="\.?/?([^"]*\.md)(#[^"]*)?"`)
+
+	return re.ReplaceAllStringFunc(htmlContent, func(match string) string {
+		subMatch := re.FindStringSubmatch(match)
+		if len(subMatch) < 2 {
+			return match
+		}
+
+		// Extract anchor part (#...)
+		anchor := ""
+		if len(subMatch) >= 3 && subMatch[2] != "" {
+			anchor = subMatch[2]
+		}
+
+		if anchor != "" {
+			// Has explicit anchor - normalize it to match goldmark's heading ID format
+			normalized := normalizeAnchor(anchor)
+			return fmt.Sprintf(`href="%s"`, normalized)
+		}
+
+		// No anchor - extract filename and create section-based anchor
+		mdPath := subMatch[1]
+		baseName := filepath.Base(mdPath)
+		baseName = strings.TrimSuffix(baseName, ".md")
+
+		// Map known files to their heading IDs (goldmark generates these)
+		// Note: Goldmark strips Korean characters, leaving only numbers and English
+		headingMap := map[string]string{
+			"01_basics":         "31---",
+			"02_service_mgmt":   "32---service",
+			"03_monitoring":     "33----monitoring",
+			"04_backup_restore": "34----backuprestore",
+			"05_environment":    "35---env",
+			"06_security":       "36----security-analysis--remediation",
+		}
+
+		if anchor, exists := headingMap[baseName]; exists {
+			return fmt.Sprintf(`href="#%s"`, anchor)
+		}
+
+		// Fallback: use lowercase filename as anchor
+		return fmt.Sprintf(`href="#%s"`, strings.ToLower(baseName))
+	})
+}
+
+// normalizeAnchor converts anchor text to goldmark-style heading ID
+// Goldmark removes non-ASCII characters (like Korean) and converts to lowercase
+// Example: #322-서비스-로그-로테이션-상태-확인-및-설정-logrotate → #322--------logrotate
+func normalizeAnchor(anchor string) string {
+	// URL decode first (handle %EC%84%9C%EB%B9%84%EC%8A%A4 etc.)
+	decoded, err := url.QueryUnescape(anchor)
+	if err != nil {
+		decoded = anchor
+	}
+
+	// Remove the leading #
+	if strings.HasPrefix(decoded, "#") {
+		decoded = decoded[1:]
+	}
+
+	// Keep only ASCII letters, numbers, and hyphens (goldmark behavior)
+	var result strings.Builder
+	for _, r := range decoded {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' {
+			result.WriteRune(r)
+		} else if r == ' ' || r == '_' {
+			result.WriteRune('-')
+		}
+		// Non-ASCII characters (Korean, etc.) are dropped
+	}
+
+	// Lowercase and clean up multiple hyphens
+	normalized := strings.ToLower(result.String())
+
+	return "#" + normalized
 }
 
 //go:embed templates/*.html
