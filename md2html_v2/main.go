@@ -217,7 +217,12 @@ func main() {
 	// Parse and convert each markdown file
 	var sections []ManualSection
 	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, extension.Table),
+		goldmark.WithExtensions(
+			extension.GFM,
+			extension.Table,
+			extension.Footnote,
+			extension.DefinitionList,
+		),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
 		goldmark.WithRendererOptions(html.WithUnsafe()),
 	)
@@ -237,7 +242,9 @@ func main() {
 
 		// Pre-process: Handle Docsify syntax
 		stringContent := string(content)
-		stringContent = preprocessDocsify(stringContent)
+		stringContent = preprocessAlerts(stringContent)
+		stringContent = preprocessHighlight(stringContent)
+		stringContent = preprocessEmoji(stringContent)
 
 		var buf bytes.Buffer
 		if err := md.Convert([]byte(stringContent), &buf); err != nil {
@@ -479,13 +486,72 @@ func convertMermaidBlocks(html string) string {
 	return re.ReplaceAllString(html, `<div class="mermaid">$1</div>`)
 }
 
-func preprocessDocsify(content string) string {
+// preprocessAlerts는 Docsify(!>, ?>), Docusaurus(:::type) 구문을 GFM Alert 형식으로 변환합니다.
+func preprocessAlerts(content string) string {
 	lines := strings.Split(content, "\n")
 	var newLines []string
 	inAlert := false
+	inDocusaurus := false
+
+	// Docusaurus 타입을 GFM 타입으로 매핑
+	docusaurusMap := map[string]string{
+		"note":    "NOTE",
+		"tip":     "TIP",
+		"info":    "NOTE",
+		"warning": "WARNING",
+		"danger":  "CAUTION",
+		"caution": "CAUTION",
+	}
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
+
+		// Docusaurus 구문 시작: :::note, :::tip[제목] 등
+		if strings.HasPrefix(trimmed, ":::") && !strings.HasSuffix(trimmed, ":::") {
+			// :::type 또는 :::type[title] 파싱
+			rest := strings.TrimPrefix(trimmed, ":::")
+			typePart := rest
+			title := ""
+
+			// [title] 추출
+			if idx := strings.Index(rest, "["); idx != -1 {
+				typePart = rest[:idx]
+				if endIdx := strings.Index(rest, "]"); endIdx != -1 {
+					title = rest[idx+1 : endIdx]
+				}
+			}
+
+			typePart = strings.ToLower(strings.TrimSpace(typePart))
+			if gfmType, ok := docusaurusMap[typePart]; ok {
+				inDocusaurus = true
+				// 첫 줄 생성: > [!TYPE] 또는 > [!TYPE] **제목**
+				if title != "" {
+					newLines = append(newLines, fmt.Sprintf("> [!%s] **%s**", gfmType, title))
+				} else {
+					newLines = append(newLines, fmt.Sprintf("> [!%s]", gfmType))
+				}
+				continue
+			}
+		}
+
+		// Docusaurus 구문 종료: :::
+		if inDocusaurus && trimmed == ":::" {
+			inDocusaurus = false
+			newLines = append(newLines, "")
+			continue
+		}
+
+		// Docusaurus 블록 내부
+		if inDocusaurus {
+			if trimmed == "" {
+				newLines = append(newLines, ">")
+			} else {
+				newLines = append(newLines, "> "+line)
+			}
+			continue
+		}
+
+		// Docsify 구문: !> (Important), ?> (Tip)
 		isImportant := strings.HasPrefix(trimmed, "!> ")
 		isTip := strings.HasPrefix(trimmed, "?> ")
 
@@ -514,15 +580,27 @@ func preprocessDocsify(content string) string {
 }
 
 func postProcessAlerts(htmlContent string) string {
-	// Pattern for Important: <blockquote><p>[!IMPORTANT] content...</p>...</blockquote>
-	// Goldmark renders > text as <blockquote><p>text</p></blockquote>
+	// GFM Alert 타입별 설정: [타입] -> (CSS 클래스, 아이콘)
+	// NOTE, TIP, IMPORTANT, WARNING, CAUTION
+	alertTypes := []struct {
+		Tag   string
+		Class string
+		Icon  string
+	}{
+		{"NOTE", "alert-note", "fa-info-circle"},
+		{"TIP", "alert-tip", "fa-lightbulb"},
+		{"IMPORTANT", "alert-important", "fa-exclamation-circle"},
+		{"WARNING", "alert-warning", "fa-triangle-exclamation"},
+		{"CAUTION", "alert-caution", "fa-radiation"},
+	}
 
-	// 1차 변환: blockquote를 alert div로 변환
-	reImp := regexp.MustCompile(`(?s)<blockquote>\s*<p>\s*\[!IMPORTANT\]\s*(.*?)</p>(\s*.*?)</blockquote>`)
-	htmlContent = reImp.ReplaceAllString(htmlContent, `<div class="alert alert-important"><div class="alert-icon"><i class="fas fa-exclamation-circle"></i></div><div class="alert-content"><p>$1</p>$2</div></div>`)
-
-	reTip := regexp.MustCompile(`(?s)<blockquote>\s*<p>\s*\[!TIP\]\s*(.*?)</p>(\s*.*?)</blockquote>`)
-	htmlContent = reTip.ReplaceAllString(htmlContent, `<div class="alert alert-tip"><div class="alert-icon"><i class="fas fa-lightbulb"></i></div><div class="alert-content"><p>$1</p>$2</div></div>`)
+	// 각 Alert 타입에 대해 blockquote를 alert div로 변환
+	for _, at := range alertTypes {
+		pattern := fmt.Sprintf(`(?s)<blockquote>\s*<p>\s*\[!%s\]\s*(.*?)</p>(\s*.*?)</blockquote>`, at.Tag)
+		re := regexp.MustCompile(pattern)
+		replacement := fmt.Sprintf(`<div class="alert %s"><div class="alert-icon"><i class="fas %s"></i></div><div class="alert-content"><p>$1</p>$2</div></div>`, at.Class, at.Icon)
+		htmlContent = re.ReplaceAllString(htmlContent, replacement)
+	}
 
 	// 2차 변환: <p><strong>제목</strong>: 내용</p> 패턴을 제목/본문으로 분리
 	// 예: <p><strong>알림</strong>: 다른 곳에서...</p> → <div class="alert-title">알림</div><p class="alert-body">다른 곳에서...</p>
@@ -530,6 +608,45 @@ func postProcessAlerts(htmlContent string) string {
 	htmlContent = reTitleBody.ReplaceAllString(htmlContent, `<div class="alert-title">$1</div><p class="alert-body">$2</p>`)
 
 	return htmlContent
+}
+
+// preprocessHighlight는 ==텍스트== 구문을 <mark>텍스트</mark>로 변환합니다.
+func preprocessHighlight(content string) string {
+	re := regexp.MustCompile(`==([^=]+)==`)
+	return re.ReplaceAllString(content, "<mark>$1</mark>")
+}
+
+// preprocessEmoji는 :emoji: 단축코드를 Unicode 이모지로 변환합니다.
+func preprocessEmoji(content string) string {
+	// 주요 이모지 매핑 테이블
+	emojiMap := map[string]string{
+		// 일반
+		":+1:": "👍", ":-1:": "👎", ":heart:": "❤️", ":star:": "⭐",
+		":fire:": "🔥", ":rocket:": "🚀", ":sparkles:": "✨", ":eyes:": "👀",
+		":clap:": "👏", ":muscle:": "💪", ":pray:": "🙏", ":wave:": "👋",
+		// 상태/알림
+		":warning:": "⚠️", ":x:": "❌", ":white_check_mark:": "✅", ":heavy_check_mark:": "✔️",
+		":question:": "❓", ":exclamation:": "❗", ":bangbang:": "‼️",
+		":info:": "ℹ️", ":bulb:": "💡", ":memo:": "📝", ":book:": "📖",
+		// 감정
+		":smile:": "😊", ":grin:": "😁", ":joy:": "😂", ":thinking:": "🤔",
+		":sunglasses:": "😎", ":sob:": "😭", ":confused:": "😕", ":rage:": "😡",
+		// 개발
+		":bug:": "🐛", ":wrench:": "🔧", ":hammer:": "🔨", ":gear:": "⚙️",
+		":lock:": "🔒", ":key:": "🔑", ":package:": "📦", ":link:": "🔗",
+		":zap:": "⚡", ":construction:": "🚧", ":recycle:": "♻️", ":trash:": "🗑️",
+		// 화살표
+		":arrow_right:": "➡️", ":arrow_left:": "⬅️", ":arrow_up:": "⬆️", ":arrow_down:": "⬇️",
+		":point_right:": "👉", ":point_left:": "👈", ":point_up:": "👆", ":point_down:": "👇",
+	}
+
+	re := regexp.MustCompile(`:([a-z0-9_+-]+):`)
+	return re.ReplaceAllStringFunc(content, func(match string) string {
+		if emoji, ok := emojiMap[match]; ok {
+			return emoji
+		}
+		return match // 매핑되지 않은 이모지는 그대로 유지
+	})
 }
 
 func embedImages(htmlContent, mdFilePath string) string {

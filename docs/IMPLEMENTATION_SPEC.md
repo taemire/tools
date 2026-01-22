@@ -1,8 +1,8 @@
 ﻿# 제품 구현 명세서 (Implementation Specification)
 
 **프로젝트**: Common Development Tools (tools)  
-**버전**: 0.1.2  
-**최종 갱신**: 2025-12-26
+**버전**: 0.1.3  
+**최종 갱신**: 2026-01-22
 
 ---
 
@@ -57,8 +57,27 @@ Markdown 문서를 HTML로 변환하여 사용자 매뉴얼, API 문서, 리포�
   - Table 확장
   - Auto Heading ID 생성
   - Unsafe HTML 허용 (커스텀 HTML 태그 사용 가능)
+  - Footnote (`[^1]` 각주 구문)
+  - DefinitionList (`용어 : 정의` 구문)
 
-#### 2.2.2 Docsify 문법 지원
+#### 2.2.2 MD 확장 구문 지원 ✨ (v0.1.3)
+
+**지원 알림 구문 (Callouts/Admonitions)**:
+
+| 플랫폼 | 구문 예시 | 설명 |
+|--------|-----------|------|
+| GitHub | `> [!NOTE]` | NOTE, TIP, IMPORTANT, WARNING, CAUTION |
+| Docusaurus | `:::note`, `:::tip[Title]` | note, tip, info, warning, danger |
+| Docsify | `!>`, `?>` | Important, Tip |
+
+**지원 하이라이트**:
+- `==텍스트==` → `<mark>텍스트</mark>` (노란 배경)
+
+**지원 이모지 단축코드** (40개+):
+- `:rocket:` → 🚀, `:fire:` → 🔥, `:warning:` → ⚠️, `:+1:` → 👍 등
+- 카테고리: 일반, 상태/알림, 감정, 개발, 화살표
+
+#### 2.2.3 기존 Docsify 문법 지원
 - **알림 블록**:
   - `!> 중요한 내용` → Important Alert (주황색, 느낌표 아이콘)
   - `?> 팁` → Tip Alert (파란색, 전구 아이콘)
@@ -156,13 +175,29 @@ html2pdf.exe -i final.html -o final.pdf
 - **목적**: 관련된 내용을 하나의 페이지로 그룹화하여 PDF 가독성 향상
 
 #### 2.4.3 Alert 변환 파이프라인
-1. **전처리** (`preprocessDocsify`):
-   - `!> 내용` → `> [!IMPORTANT] 내용` (Blockquote로 변환)
-   - `?> 내용` → `> [!TIP] 내용`
+1. **전처리** (`preprocessAlerts`):
+   - Docsify: `!> 내용` → `> [!IMPORTANT] 내용`
+   - Docusaurus: `:::note` → `> [!NOTE]`, `:::danger` → `> [!CAUTION]`
+   - 커스텀 제목: `:::tip[제목]` → `> [!TIP] **제목**`
 2. **Goldmark 변환**: Blockquote를 `<blockquote><p>` HTML로 변환
 3. **후처리** (`postProcessAlerts`):
-   - `<blockquote><p>[!IMPORTANT]...` → `<div class="alert alert-important">...`
+   - `<blockquote><p>[!TYPE]...` → `<div class="alert alert-type">...`
+   - 5가지 타입: NOTE, TIP, IMPORTANT, WARNING, CAUTION
+   - 각 타입별 CSS 클래스 및 Font Awesome 아이콘 적용
    - 제목/본문 분리: `<strong>제목</strong>: 내용` → `<div class="alert-title">` + `<p class="alert-body">`
+
+#### 2.4.4 Highlight 변환 (`preprocessHighlight`)
+```go
+func preprocessHighlight(content string) string {
+    re := regexp.MustCompile(`==([^=]+)==`)
+    return re.ReplaceAllString(content, "<mark>$1</mark>")
+}
+```
+
+#### 2.4.5 Emoji 변환 (`preprocessEmoji`)
+- 40개+ 이모지 매핑 테이블
+- 정규식: `:([a-z0-9_+-]+):`
+- 매핑되지 않은 단축코드는 그대로 유지
 
 #### 2.4.4 자산 경로 정규화
 - 상대 경로 (`../../assets/`) → 절대 경로 (`assets/`)
@@ -730,6 +765,6 @@ md2pdf_v2.bat -i examples\sample_manual -o test_output
 
 ---
 
-**최종 갱신일**: 2025-12-26  
-**작성자**: 장민석 TSGroup / AI Agent (Antigravity)  
-**버전**: 0.1.2
+**최종 갱신일**: 2026-01-22  
+**작성자**: TSGroup / AI Agent (Antigravity)  
+**버전**: 0.1.3

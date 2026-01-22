@@ -5,6 +5,14 @@
 ## [Unreleased]
 
 ### ✨ 기능 개선
+- **md2html_v2**: MD 확장 구문 통합 지원 (2026-01-22)
+  - **Callouts/Admonitions**: GitHub(`> [!NOTE]`), Docusaurus(`:::note`), Docsify(`!>`) 구문 통합 지원
+    - NOTE, TIP, IMPORTANT, WARNING, CAUTION 5가지 타입 및 아이콘
+    - `preprocessAlerts` 함수로 전처리 통합
+  - **Highlight**: `==텍스트==` → `<mark>텍스트</mark>` 변환
+  - **Emoji**: `:emoji:` 단축코드 → Unicode 이모지 변환 (40개+ 지원)
+  - **Footnotes**: `[^1]` 각주 구문 지원 (Goldmark 확장)
+  - **Definition Lists**: `용어 : 정의` 구문 지원 (Goldmark 확장)
 - **md2html**: PDF 변환 시 내부 링크 자동 변환 (`--pdf-mode`)
   - 상대 경로 링크(`.md#anchor`)를 PDF 내부 앵커(`#section-id`)로 변환
   - HTML 단독 사용 시 기존 링크 유지 (Docsify/브라우저 호환)

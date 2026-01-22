@@ -319,6 +319,64 @@
             border-radius: 0 8px 8px 0;
         }
 
+        /* Highlight (==text==) */
+        mark {
+            background-color: #fef08a;
+            padding: 0.1em 0.3em;
+            border-radius: 3px;
+            color: inherit;
+        }
+
+        /* Footnotes */
+        .footnotes {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        .footnotes hr {
+            display: none;
+        }
+
+        .footnotes ol {
+            padding-left: 20px;
+        }
+
+        .footnotes li {
+            margin-bottom: 8px;
+        }
+
+        sup a.footnote-ref {
+            color: #0056b3;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        a.footnote-backref {
+            color: #0056b3;
+            text-decoration: none;
+            margin-left: 4px;
+        }
+
+        /* Definition Lists */
+        dl {
+            margin: 20px 0;
+        }
+
+        dt {
+            font-weight: 700;
+            color: #1f2937;
+            margin-top: 15px;
+        }
+
+        dd {
+            margin-left: 25px;
+            margin-bottom: 10px;
+            color: #4b5563;
+        }
+
         /* Mermaid */
         .mermaid {
             text-align: center;
@@ -376,14 +434,50 @@
 
         /* Tip (?>) */
         .alert-tip {
+            background-color: #f0fdf4;
+            border-color: #bbf7d0;
+            color: #166534;
+            border-left: 4px solid #22c55e;
+        }
+
+        .alert-tip .alert-icon {
+            color: #22c55e;
+        }
+
+        /* Note (blue) */
+        .alert-note {
             background-color: #eff6ff;
             border-color: #bfdbfe;
             color: #1e40af;
             border-left: 4px solid #3b82f6;
         }
 
-        .alert-tip .alert-icon {
+        .alert-note .alert-icon {
             color: #3b82f6;
+        }
+
+        /* Warning (amber) */
+        .alert-warning {
+            background-color: #fffbeb;
+            border-color: #fde68a;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .alert-warning .alert-icon {
+            color: #f59e0b;
+        }
+
+        /* Caution (red) */
+        .alert-caution {
+            background-color: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-caution .alert-icon {
+            color: #ef4444;
         }
 
         .alert-title {

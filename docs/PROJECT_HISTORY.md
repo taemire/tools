@@ -4,6 +4,43 @@
 
 ---
 
+## 2026-01-22: MD 확장 구문 통합 지원
+
+### 배경
+- **요구사항**: GitHub-style Alerts(`> [!CAUTION]`)가 일반 blockquote로 렌더링되는 문제 해결 필요
+- **목표**: 다양한 MD 확장 구문(GitHub, Docusaurus, Obsidian 등)을 통합 지원
+
+### 작업 내용
+
+#### Phase 1: Callouts/Admonitions
+- **전처리 로직 확장**: `preprocessAlerts` 함수로 Docsify(`!>`, `?>`) 및 Docusaurus(`:::type`) 구문을 GFM Alert 형식으로 통합
+  - `:::note`, `:::tip`, `:::info`, `:::warning`, `:::danger` → `> [!TYPE]` 변환
+  - 커스텀 제목 지원: `:::note[제목]` → `> [!NOTE] **제목**`
+- **후처리 로직 확장**: `postProcessAlerts` 함수에서 5가지 Alert 타입 처리
+  - NOTE, TIP, IMPORTANT, WARNING, CAUTION
+  - 각 타입별 CSS 클래스 및 Font Awesome 아이콘 매핑
+
+#### Phase 2: Highlight & Emoji
+- **Highlight**: `preprocessHighlight` 함수 추가
+  - `==텍스트==` → `<mark>텍스트</mark>` 변환
+- **Emoji**: `preprocessEmoji` 함수 추가
+  - `:emoji:` 단축코드 → Unicode 이모지 변환
+  - 40개+ 이모지 매핑 테이블 (일반, 상태, 감정, 개발, 화살표 카테고리)
+
+#### Phase 3: Footnotes & Definition Lists
+- **Goldmark 확장 활성화**:
+  - `extension.Footnote`: `[^1]` 각주 구문 지원
+  - `extension.DefinitionList`: `용어 : 정의` 구문 지원
+- **CSS 스타일 추가**: `.footnotes`, `dl`, `dt`, `dd` 스타일링
+
+### 관련 파일
+- `md2html_v2/main.go`: `preprocessAlerts`, `preprocessHighlight`, `preprocessEmoji`, `postProcessAlerts` 함수
+- `md2html_v2/templates/layout_modern.html`: CSS 스타일 추가
+- `md2html_v2/templates/layout_report.html`: CSS 스타일 추가
+- `docs/MD_EXTENDED_SYNTAX.md`: 지원 구문 종합 문서
+
+---
+
 ## 2026-01-19: revlog.bat 태그 출력 가독성 개선
 
 ### 배경
