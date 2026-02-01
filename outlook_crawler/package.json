@@ -1,0 +1,13 @@
+{
+    "name": "outlook-crawler",
+    "version": "1.0.0",
+    "description": "Simple Outlook Web Crawler using Playwright",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "playwright": "^1.40.0",
+        "dotenv": "^16.3.1"
+    }
+}

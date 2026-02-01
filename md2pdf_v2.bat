@@ -16,20 +16,24 @@ chcp 65001 >nul
 set TOOL_DIR=%~dp0
 if "%TOOL_DIR:~-1%"=="\" set TOOL_DIR=%TOOL_DIR:~0,-1%
 
+:: Detect md2html_v2 location (support both tools\ and tools\md2html_v2\)
+set MD2HTML_DIR=%TOOL_DIR%\md2html_v2
+if not exist "%MD2HTML_DIR%" set MD2HTML_DIR=%TOOL_DIR%
+
 :: Check tools
-if not exist "%TOOL_DIR%\md2html_v2.exe" (
+if not exist "%MD2HTML_DIR%\md2html_v2.exe" (
     echo [BUILD] Building md2html_v2...
-    pushd "%TOOL_DIR%"
+    pushd "%MD2HTML_DIR%"
     go build -o md2html_v2.exe .
     popd
 )
-if not exist "%TOOL_DIR%\..\html2pdf.exe" (
-    echo [ERROR] html2pdf.exe not found in parent directory
+if not exist "%TOOL_DIR%\html2pdf.exe" (
+    echo [ERROR] html2pdf.exe not found in %TOOL_DIR%
     exit /b 1
 )
-if not exist "%TOOL_DIR%\cmd\pdf_analyzer\pdf_analyzer.exe" (
+if not exist "%MD2HTML_DIR%\cmd\pdf_analyzer\pdf_analyzer.exe" (
     echo [BUILD] Building pdf_analyzer...
-    pushd "%TOOL_DIR%\cmd\pdf_analyzer"
+    pushd "%MD2HTML_DIR%\cmd\pdf_analyzer"
     go build -o pdf_analyzer.exe .
     popd
 )
@@ -118,7 +122,7 @@ echo.
 :: ==============================================================================
 echo [PASS 1] Generating initial PDF...
 
-set MD2HTML_CMD1="%TOOL_DIR%\md2html_v2.exe" -i "!INPUT_PATH!" -o "!HTML_PASS1!" -template "!TEMPLATE!" -sections-json "!SECTIONS_JSON!" --pdf-mode
+set MD2HTML_CMD1="%MD2HTML_DIR%\md2html_v2.exe" -i "!INPUT_PATH!" -o "!HTML_PASS1!" -template "!TEMPLATE!" -sections-json "!SECTIONS_JSON!" --pdf-mode
 if defined CONFIG_FILE set MD2HTML_CMD1=!MD2HTML_CMD1! -c "!CONFIG_FILE!"
 if defined TITLE set MD2HTML_CMD1=!MD2HTML_CMD1! -title "!TITLE!"
 if defined SUBTITLE set MD2HTML_CMD1=!MD2HTML_CMD1! -subtitle "!SUBTITLE!"
@@ -136,7 +140,7 @@ if !ERRORLEVEL! NEQ 0 (
 
 :: Generate Pass 1 PDF
 echo [PASS 1] Converting HTML to PDF...
-"%TOOL_DIR%\..\html2pdf.exe" -i "!HTML_PASS1!" -o "!PDF_PASS1!"
+"%TOOL_DIR%\html2pdf.exe" -i "!HTML_PASS1!" -o "!PDF_PASS1!"
 if not exist "!PDF_PASS1!" (
     echo [ERROR] Pass 1 PDF generation failed
     exit /b 1
@@ -151,7 +155,7 @@ echo [PASS 2] Analyzing PDF for page numbers...
 
 :: Run PDF analyzer
 :: Run PDF analyzer
-"%TOOL_DIR%\cmd\pdf_analyzer\pdf_analyzer.exe" -i "!PDF_PASS1!" -sections "!SECTIONS_JSON!" -skip !SKIP_PAGES! -o "!PAGES_JSON!"
+"%MD2HTML_DIR%\cmd\pdf_analyzer\pdf_analyzer.exe" -i "!PDF_PASS1!" -sections "!SECTIONS_JSON!" -skip !SKIP_PAGES! -o "!PAGES_JSON!"
 if !ERRORLEVEL! NEQ 0 (
     echo [WARN] PDF analysis failed, continuing without page numbers
     copy /y "!PDF_PASS1!" "!PDF_OUT!" >nul
@@ -162,7 +166,7 @@ echo [PASS 2] Page numbers extracted to: !PAGES_JSON!
 
 :: Regenerate HTML with page numbers
 echo [PASS 2] Regenerating HTML with page numbers...
-set MD2HTML_CMD2="%TOOL_DIR%\md2html_v2.exe" -i "!INPUT_PATH!" -o "!HTML_OUT!" -template "!TEMPLATE!" --pdf-mode
+set MD2HTML_CMD2="%MD2HTML_DIR%\md2html_v2.exe" -i "!INPUT_PATH!" -o "!HTML_OUT!" -template "!TEMPLATE!" --pdf-mode
 set MD2HTML_CMD2=!MD2HTML_CMD2! -pages-json "!PAGES_JSON!"
 if defined CONFIG_FILE set MD2HTML_CMD2=!MD2HTML_CMD2! -c "!CONFIG_FILE!"
 if defined TITLE set MD2HTML_CMD2=!MD2HTML_CMD2! -title "!TITLE!"
@@ -180,7 +184,7 @@ if !ERRORLEVEL! NEQ 0 (
 
 :: Generate final PDF
 echo [PASS 2] Converting to final PDF...
-"%TOOL_DIR%\..\html2pdf.exe" -i "!HTML_OUT!" -o "!PDF_OUT!"
+"%TOOL_DIR%\html2pdf.exe" -i "!HTML_OUT!" -o "!PDF_OUT!"
 if not exist "!PDF_OUT!" (
     echo [ERROR] Final PDF generation failed
     exit /b 1
