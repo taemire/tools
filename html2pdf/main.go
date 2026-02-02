@@ -25,6 +25,7 @@ func main() {
 	output := flag.String("o", "", "Output PDF file path (default: same as input with .pdf)")
 	landscape := flag.Bool("landscape", false, "Use landscape orientation")
 	showVersion := flag.Bool("v", false, "Show version")
+	noSandbox := flag.Bool("no-sandbox", false, "Disable Chrome sandbox (required for CI environments)")
 
 	// 헤더/푸터 관련 옵션
 	displayHeaderFooter := flag.Bool("hf", false, "Display header and footer")
@@ -85,6 +86,19 @@ func main() {
 	// Create context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
+
+	// Chrome options for CI environments
+	if *noSandbox {
+		fmt.Println("[INFO] Running with --no-sandbox (CI mode)")
+		opts := append(chromedp.DefaultExecAllocatorOptions[:],
+			chromedp.Flag("no-sandbox", true),
+			chromedp.Flag("disable-setuid-sandbox", true),
+			chromedp.Flag("disable-dev-shm-usage", true),
+		)
+		allocCtx, allocCancel := chromedp.NewExecAllocator(ctx, opts...)
+		defer allocCancel()
+		ctx = allocCtx
+	}
 
 	// Create Chrome context (Quiet mode to ignore CDP unmarshal noise)
 	ctx, cancel = chromedp.NewContext(ctx,
