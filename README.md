@@ -2,35 +2,59 @@
 
 다양한 프로젝트(`tkcli`, `tkadmin`, `codesign_service`)에서 공통으로 사용되는 개발, 빌드, 문서화 도구 모음입니다.
 
-## 🛠️ 포함된 도구
+## 📚 문서 생성 도구 (Documentation)
 
-### 1. html2pdf
-- **기능**: HTML 문서를 PDF로 변환 (Chrome/Chromium 기반)
-- **특징**: `revlog`과 달리 외부 브라우저 엔진(chromedp)을 사용하여 고품질 렌더링 지원.
-- **실행**: `html2pdf.exe`
+### 1. [md2pdf](md2pdf/) ⭐ (통합 바이너리)
+- **기능**: Markdown → HTML → PDF **올인원 변환기** (단일 Go 바이너리).
+- **구조**: `converter/` (MD→HTML) + `renderer/` (HTML→PDF) + `analyzer/` (PDF 분석) 패키지 통합.
+- **사용법**:
+  ```bash
+  # PDF 생성
+  md2pdf -i docs/manual -o manual.pdf -title "사용자 매뉴얼" -version "1.0.0"
+  # HTML만 생성
+  md2pdf -i docs/manual -o manual.html -html-only
+  ```
+- **위치**: `md2pdf/` (Go 소스)
 
-### 2. md2html
-- **기능**: Markdown 명세서를 HTML 문서로 변환
-- **특징**: 커스텀 템플릿 지원, `_sidebar.md` 기반 네비게이션 생성.
-- **실행**: `md2html.exe`
+### 2. [md2pdf_v2](md2pdf_v2.bat) (호환 래퍼)
+- **파일**: `md2pdf_v2.bat` (Windows), `md2pdf_v2.sh` (macOS/Linux)
+- **기능**: `md2pdf` 바이너리의 래퍼 스크립트. 기존 호출 호환 유지.
 
-### 3. revlog.bat
-- **기능**: Git 리포지토리의 커밋 히스토리 및 태그 정보를 직관적으로 조회.
-- **사용법**: `revlog.bat [-n count]`
+---
 
-### 4. mp4towebp.bat
-- **기능**: MP4 동영상을 고효율 WebP 애니메이션으로 변환. (문서 첨부용)
-- **특징**: 시스템에 FFmpeg가 없으면 자동으로 다운로드 및 설치.
-- **사용법**: `mp4towebp.bat input.mp4 [output.webp] [fps] [width]`
+## 🛠️ 개발 유틸리티 (Utilities)
 
-### 5. upx.exe
-- **기능**: 실행 파일(Binary) 압축 및 크기 최적화.
-- **특징**: `codesign_service`, `tkcli` 등 Go 바이너리 크기를 줄이는 데 사용.
-- **사용법**: `upx.exe -9 -o output_compressed.exe input.exe`
+### 3. [revlog](revlog.bat)
+- **파일**: `revlog.bat` (Windows), `revlog.sh` (macOS/Linux)
+- **기능**: Git 리포지토리의 커밋 히스토리 및 태그 정보를 직관적인 그래프로 조회.
+- **사용법**: `revlog [-n count]`
+
+### 4. [outlook_crawler](outlook_crawler)
+- **기능**: Outlook 이메일 데이터를 수집 및 분석하는 도구.
+- **위치**: `outlook_crawler/` (Node.js/Python 등)
+
+### 5. [mp4towebp.bat](mp4towebp.bat)
+- **기능**: MP4 동영상을 고효율 WebP 애니메이션으로 변환 (문서 첨부 최적화).
+- **특징**: FFmpeg 자동 설치 지원.
+- **사용법**: `mp4towebp.bat input.mp4 [output.webp]`
+
+---
+
+## 🗄️ 아카이브 (Archived)
+
+사용되지 않거나 대체된 도구들은 `_archive/` 디렉토리로 이동되었습니다.
+
+- **md2html (v1)**: `md2html_v2`로 대체됨.
+- **md2html_v2**: `md2pdf` 통합 바이너리의 `converter/` 패키지로 흡수됨.
+- **html2pdf**: `md2pdf` 통합 바이너리의 `renderer/` 패키지로 흡수됨.
+- **md2pdf (v1)**: `md2pdf_v2` 스크립트 방식(html2pdf 기반)으로 대체됨.
+- **md2pdf_v2 (Go Source)**: Go 네이티브 PDF 생성 시도 버전. 중단됨.
+
+---
 
 ## 📦 설치 및 사용
 
-이 프로젝트는 독립적으로 클론하여 사용하거나, 다른 프로젝트의 상위 `tools/` 디렉토리로 배치하여 사용합니다.
+이 프로젝트는 독립적으로 클론하여 사용하거나, 다른 프로젝트의 상위 `tools/` 디렉토리에 배치하여 사용합니다.
 
 ```bash
 git clone ssh://taemire@code.myds.me:65022/volume1/git/tools.git

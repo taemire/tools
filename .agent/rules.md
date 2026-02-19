@@ -2,8 +2,6 @@
 
 이 문서는 tools 프로젝트를 개발하는 AI Agent가 준수해야 할 엄격한 수칙을 담고 있습니다.
 
-현재 개발환경은 윈도우 이고 파워쉘을 사용한다.
-
 ## 🧪 개발 전략 (Development Strategy)
 
 ### 1. TDD (Test-Driven Development) 도입

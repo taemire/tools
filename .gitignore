@@ -12,6 +12,7 @@ logs/
 tmp/
 temp/
 .DS_Store
+ref/
 
 # AI Agent Configuration (명시적 추적)
 !.agent/
