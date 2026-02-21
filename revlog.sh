@@ -118,7 +118,7 @@ while IFS= read -r line; do
 
     ENTRIES+=("r${CURRENT}${SEP}${tag}${SEP}${hash}${SEP}${time}${SEP}${desc}")
     ((CURRENT--))
-done < <(git log --pretty=format:"%h${SEP}%s${SEP}%ad${SEP}%D" --date=format:'%Y-%m-%d %H:%M:%S' -n "$COUNT")
+done < <(git log --pretty=tformat:"%h${SEP}%s${SEP}%ad${SEP}%D" --date=format:'%Y-%m-%d %H:%M:%S' -n "$COUNT")
 
 # 헤더 출력
 printf "%-${MAX_REV_LEN}s %-${MAX_TAG_LEN}s %-7s %-19s %s\n" "Rev" "Tag" "Hash" "Time" "Description"
