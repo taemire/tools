@@ -4,11 +4,9 @@ package autofill
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/chromedp/cdproto/cdp"
-	"github.com/mailru/easyjson"
-	"github.com/mailru/easyjson/jlexer"
-	"github.com/mailru/easyjson/jwriter"
 )
 
 // CreditCard [no description].
@@ -54,7 +52,7 @@ type Address struct {
 //
 // See: https://chromedevtools.github.io/devtools-protocol/tot/Autofill#type-AddressUI
 type AddressUI struct {
-	AddressFields []*AddressFields `json:"addressFields"` // A two dimension array containing the repesentation of values from an address profile.
+	AddressFields []*AddressFields `json:"addressFields"` // A two dimension array containing the representation of values from an address profile.
 }
 
 // FillingStrategy specified whether a filled field was done so by using the
@@ -74,33 +72,20 @@ const (
 	FillingStrategyAutofillInferred      FillingStrategy = "autofillInferred"
 )
 
-// MarshalEasyJSON satisfies easyjson.Marshaler.
-func (t FillingStrategy) MarshalEasyJSON(out *jwriter.Writer) {
-	out.String(string(t))
-}
+// UnmarshalJSON satisfies [json.Unmarshaler].
+func (t *FillingStrategy) UnmarshalJSON(buf []byte) error {
+	s := string(buf)
+	s = strings.TrimSuffix(strings.TrimPrefix(s, `"`), `"`)
 
-// MarshalJSON satisfies json.Marshaler.
-func (t FillingStrategy) MarshalJSON() ([]byte, error) {
-	return easyjson.Marshal(t)
-}
-
-// UnmarshalEasyJSON satisfies easyjson.Unmarshaler.
-func (t *FillingStrategy) UnmarshalEasyJSON(in *jlexer.Lexer) {
-	v := in.String()
-	switch FillingStrategy(v) {
+	switch FillingStrategy(s) {
 	case FillingStrategyAutocompleteAttribute:
 		*t = FillingStrategyAutocompleteAttribute
 	case FillingStrategyAutofillInferred:
 		*t = FillingStrategyAutofillInferred
-
 	default:
-		in.AddError(fmt.Errorf("unknown FillingStrategy value: %v", v))
+		return fmt.Errorf("unknown FillingStrategy value: %v", s)
 	}
-}
-
-// UnmarshalJSON satisfies json.Unmarshaler.
-func (t *FillingStrategy) UnmarshalJSON(buf []byte) error {
-	return easyjson.Unmarshal(buf, t)
+	return nil
 }
 
 // FilledField [no description].
@@ -113,5 +98,6 @@ type FilledField struct {
 	Value           string            `json:"value"`           // the field value
 	AutofillType    string            `json:"autofillType"`    // The actual field type, e.g FAMILY_NAME
 	FillingStrategy FillingStrategy   `json:"fillingStrategy"` // The filling strategy
+	FrameID         cdp.FrameID       `json:"frameId"`         // The frame the field belongs to
 	FieldID         cdp.BackendNodeID `json:"fieldId"`         // The form field's DOM node
 }

@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/ledongthuc/pdf"
 )
@@ -30,9 +31,11 @@ type SubHeading struct {
 
 // SectionPage는 섹션 ID와 페이지 번호 매핑
 type SectionPage struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
-	Page  int    `json:"page"`
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	Page      int    `json:"page"`
+	ParentID  string `json:"-"`
+	ParentIdx int    `json:"-"`
 }
 
 // Result는 PDF 분석 결과
@@ -69,20 +72,26 @@ func AnalyzePDF(pdfPath, sectionsJSONPath string, skipPages int) (*Result, error
 		}
 
 		for _, input := range sectionInputs {
+			// Add parent section
 			sections = append(sections, SectionPage{
 				ID:    input.ID,
 				Title: input.Title,
 				Page:  0,
 			})
+			parentIdx := len(sections) - 1
+
+			// Add subheadings with parent mapping
 			for _, sub := range input.SubHeadings {
 				sections = append(sections, SectionPage{
-					ID:    sub.ID,
-					Title: sub.Title,
-					Page:  0,
+					ID:        sub.ID,
+					Title:     sub.Title,
+					Page:      0,
+					ParentID:  input.ID,
+					ParentIdx: parentIdx,
 				})
 			}
 		}
-		fmt.Fprintf(os.Stderr, "[INFO] Loaded %d sections (including subheadings)\n", len(sections))
+		fmt.Fprintf(os.Stderr, "[INFO] Loaded %d entries to map\n", len(sections))
 	}
 
 	// Detect or use provided skip pages
@@ -105,26 +114,32 @@ func AnalyzePDF(pdfPath, sectionsJSONPath string, skipPages int) (*Result, error
 	startPage := actualSkipPages + 1
 	fmt.Fprintf(os.Stderr, "[INFO] Searching from page %d (skipping %d pages)\n", startPage, actualSkipPages)
 
-	for pageNum := startPage; pageNum <= totalPages; pageNum++ {
-		page := r.Page(pageNum)
-		if page.V.IsNull() {
-			continue
-		}
-
-		text, err := page.GetPlainText(nil)
-		if err != nil {
-			continue
-		}
-
-		for i := range sections {
-			if sections[i].Page == 0 {
-				if containsTitle(text, sections[i].Title) {
-					docPageNum := pageNum - actualSkipPages
-					sections[i].Page = docPageNum
-					fmt.Fprintf(os.Stderr, "[FOUND] '%s' on page %d (physical: %d, skipped: %d)\n",
-						sections[i].Title, docPageNum, pageNum, actualSkipPages)
-				}
+	lastFoundPage := startPage
+	for i := range sections {
+		found := false
+		for pageNum := lastFoundPage; pageNum <= totalPages; pageNum++ {
+			page := r.Page(pageNum)
+			if page.V.IsNull() {
+				continue
 			}
+
+			text, err := page.GetPlainText(nil)
+			if err != nil {
+				continue
+			}
+
+			if containsTitle(text, sections[i].Title) {
+				docPageNum := pageNum - actualSkipPages
+				sections[i].Page = docPageNum
+				lastFoundPage = pageNum // Move pointer to this page
+				found = true
+				fmt.Fprintf(os.Stderr, "[FOUND] '%s' on page %d (physical: %d)\n",
+					sections[i].Title, docPageNum, pageNum)
+				break
+			}
+		}
+		if !found {
+			fmt.Fprintf(os.Stderr, "[WARN] Could not find section: '%s'\n", sections[i].Title)
 		}
 	}
 
@@ -186,9 +201,32 @@ func detectTocEndPage(sections []SectionPage, r *pdf.Reader) int {
 }
 
 func isBodyPage(text string, sections []SectionPage) bool {
-	dotLeaderPattern := regexp.MustCompile(`\.{2,}|·{2,}|…{1,}`)
+	cleanText := strings.ReplaceAll(text, " ", "")
+	cleanText = strings.ReplaceAll(cleanText, "\n", "")
+	cleanText = strings.ReplaceAll(cleanText, "\t", "")
+	textLength := len(cleanText)
+
+	// TOC indicator: Even if "목차" is missing, many dots or ellipses are a strong TOC signal
+	dotLeaderPattern := regexp.MustCompile(`\.{2,}|·{2,}|…{1,}|·{2,}`)
 	dotMatches := dotLeaderPattern.FindAllString(text, -1)
 	dotCount := len(dotMatches)
+
+	// If a page has many dot leaders, it's definitely a TOC
+	if dotCount > 5 {
+		return false
+	}
+
+	if strings.Contains(text, "목차") || strings.Contains(text, "Table of Contents") {
+		if dotCount > 2 || textLength < 500 {
+			return false
+		}
+	}
+
+	if sections == nil {
+		// Simple check for body pages during main loop.
+		// Body pages usually have paragraphs, while TOC pages are sparse or list-like.
+		return textLength > 100 && dotCount <= 3
+	}
 
 	sectionCount := 0
 	for _, sec := range sections {
@@ -197,49 +235,55 @@ func isBodyPage(text string, sections []SectionPage) bool {
 		}
 	}
 
-	cleanText := strings.ReplaceAll(text, " ", "")
-	cleanText = strings.ReplaceAll(cleanText, "\n", "")
-	cleanText = strings.ReplaceAll(cleanText, "\t", "")
-	textLength := len(cleanText)
+	// If many titles from different sections appear, it's likely a TOC page
+	if sectionCount > 8 {
+		return false
+	}
 
-	if sectionCount > 5 {
+	if textLength < 150 {
 		return false
 	}
-	if textLength < 100 {
-		return false
-	}
+
 	if sectionCount > 0 {
 		avgTextPerSection := textLength / sectionCount
-		if avgTextPerSection < 80 || dotCount > 3 {
+		if avgTextPerSection < 100 {
 			return false
-		}
-	} else {
-		if textLength > 400 && dotCount == 0 {
-			return true
 		}
 	}
 	return true
 }
 
 func containsTitle(text, title string) bool {
+	runeCount := utf8.RuneCountInString(title)
+	if runeCount < 1 {
+		return false
+	}
 	text = strings.TrimSpace(text)
 	title = strings.TrimSpace(title)
 
 	stripSpecial := func(s string) string {
-		reg := regexp.MustCompile(`[^a-zA-Z0-9가-힣\s\[\]\(\)\-_]`)
+		// Keep only letters and numbers
+		reg := regexp.MustCompile(`[^a-zA-Z0-9가-힣]`)
 		return reg.ReplaceAllString(s, "")
 	}
 
+	// Remove all spaces and special characters for the most robust Korean matching in PDFs
 	cleanText := stripSpecial(text)
 	cleanTitle := stripSpecial(title)
 
-	if strings.Contains(cleanText, cleanTitle) {
-		return true
+	// Remove leading numbers (1., 1.1, 1.1.1, etc)
+	reNum := regexp.MustCompile(`^[\d\.]+`)
+	noNumText := reNum.ReplaceAllString(cleanText, "")
+	noNumTitle := reNum.ReplaceAllString(cleanTitle, "")
+
+	if cleanTitle == "" || noNumTitle == "" {
+		return false
 	}
 
-	re := regexp.MustCompile(`^\d+\.\s*`)
-	noNumberTitle := re.ReplaceAllString(cleanTitle, "")
-	if noNumberTitle != cleanTitle && strings.Contains(cleanText, noNumberTitle) {
+	// Double check matching with both original (cleaned) and no-number versions
+	if strings.Contains(cleanText, cleanTitle) ||
+		strings.Contains(noNumText, noNumTitle) ||
+		strings.Contains(cleanText, noNumTitle) {
 		return true
 	}
 

@@ -584,12 +584,6 @@
             }
         }
 
-        /* 컨텐츠 페이지 래퍼: 목차 진입 시 무조건 페이지 1(i)로 리셋 */
-        .content-page {
-            /* page-break-before가 아래 요소들과 충돌할 수 있으므로 주의 */
-            counter-reset: page 1;
-        }
-
         .frontmatter {
             page: frontmatter;
             counter-reset: page-toc 0;
@@ -605,8 +599,6 @@
             display: flow-root;
         }
 
-
-
         .cover-page {
             page: cover;
             /* Cover is independent */
@@ -618,6 +610,13 @@
 
         .section {
             /* Inherits main page scope */
+        }
+
+
+
+        .cover-page {
+            page: cover;
+            /* Cover is independent */
         }
 
         /* 본문 첫 섹션 진입 시 페이지 번호를 1로 리셋 (명시적 클래스 사용) */

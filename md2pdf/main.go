@@ -134,7 +134,9 @@ func main() {
 	pdfPass1 := filepath.Join(tmpDir, "pass1.pdf")
 	sectionsJSON := filepath.Join(tmpDir, "sections.json")
 	pagesJSON := filepath.Join(tmpDir, "pages.json")
-	htmlPass2 := filepath.Join(tmpDir, "pass2.html")
+
+	// The final HTML will be saved alongside the PDF
+	finalHTML := strings.TrimSuffix(*outputFile, filepath.Ext(*outputFile)) + ".html"
 
 	// ======================================================================
 	// PASS 1: Generate HTML without page numbers, then render to PDF
@@ -193,7 +195,7 @@ func main() {
 	fmt.Println("[PASS 2] Regenerating HTML (with page numbers)...")
 
 	pass2Opts := baseOpts
-	pass2Opts.OutputFile = htmlPass2
+	pass2Opts.OutputFile = finalHTML
 	pass2Opts.SectionsJSON = "" // Don't regenerate sections
 	pass2Opts.PagesJSON = pagesJSON
 
@@ -204,7 +206,7 @@ func main() {
 	}
 
 	fmt.Println("[PASS 2] Converting to final PDF...")
-	err = renderer.RenderToPDF(htmlPass2, *outputFile, renderer.Options{})
+	err = renderer.RenderToPDF(finalHTML, *outputFile, renderer.Options{})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Final PDF generation failed: %v\n", err)
 		os.Exit(1)
@@ -215,6 +217,7 @@ func main() {
 	// ======================================================================
 	fmt.Println()
 	fmt.Println("==============================================================================")
+	fmt.Printf("[SUCCESS] HTML generated: %s\n", finalHTML)
 	fmt.Printf("[SUCCESS] PDF generated: %s\n", *outputFile)
 	fmt.Println("==============================================================================")
 }

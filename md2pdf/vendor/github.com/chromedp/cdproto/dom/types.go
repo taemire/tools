@@ -4,10 +4,10 @@ package dom
 
 import (
 	"fmt"
+	"strings"
 
-	"github.com/mailru/easyjson"
-	"github.com/mailru/easyjson/jlexer"
-	"github.com/mailru/easyjson/jwriter"
+	"github.com/chromedp/cdproto/cdp"
+	"github.com/go-json-experiment/json/jsontext"
 )
 
 // PhysicalAxes containerSelector physical axes.
@@ -27,35 +27,22 @@ const (
 	PhysicalAxesBoth       PhysicalAxes = "Both"
 )
 
-// MarshalEasyJSON satisfies easyjson.Marshaler.
-func (t PhysicalAxes) MarshalEasyJSON(out *jwriter.Writer) {
-	out.String(string(t))
-}
+// UnmarshalJSON satisfies [json.Unmarshaler].
+func (t *PhysicalAxes) UnmarshalJSON(buf []byte) error {
+	s := string(buf)
+	s = strings.TrimSuffix(strings.TrimPrefix(s, `"`), `"`)
 
-// MarshalJSON satisfies json.Marshaler.
-func (t PhysicalAxes) MarshalJSON() ([]byte, error) {
-	return easyjson.Marshal(t)
-}
-
-// UnmarshalEasyJSON satisfies easyjson.Unmarshaler.
-func (t *PhysicalAxes) UnmarshalEasyJSON(in *jlexer.Lexer) {
-	v := in.String()
-	switch PhysicalAxes(v) {
+	switch PhysicalAxes(s) {
 	case PhysicalAxesHorizontal:
 		*t = PhysicalAxesHorizontal
 	case PhysicalAxesVertical:
 		*t = PhysicalAxesVertical
 	case PhysicalAxesBoth:
 		*t = PhysicalAxesBoth
-
 	default:
-		in.AddError(fmt.Errorf("unknown PhysicalAxes value: %v", v))
+		return fmt.Errorf("unknown PhysicalAxes value: %v", s)
 	}
-}
-
-// UnmarshalJSON satisfies json.Unmarshaler.
-func (t *PhysicalAxes) UnmarshalJSON(buf []byte) error {
-	return easyjson.Unmarshal(buf, t)
+	return nil
 }
 
 // LogicalAxes containerSelector logical axes.
@@ -75,35 +62,63 @@ const (
 	LogicalAxesBoth   LogicalAxes = "Both"
 )
 
-// MarshalEasyJSON satisfies easyjson.Marshaler.
-func (t LogicalAxes) MarshalEasyJSON(out *jwriter.Writer) {
-	out.String(string(t))
-}
+// UnmarshalJSON satisfies [json.Unmarshaler].
+func (t *LogicalAxes) UnmarshalJSON(buf []byte) error {
+	s := string(buf)
+	s = strings.TrimSuffix(strings.TrimPrefix(s, `"`), `"`)
 
-// MarshalJSON satisfies json.Marshaler.
-func (t LogicalAxes) MarshalJSON() ([]byte, error) {
-	return easyjson.Marshal(t)
-}
-
-// UnmarshalEasyJSON satisfies easyjson.Unmarshaler.
-func (t *LogicalAxes) UnmarshalEasyJSON(in *jlexer.Lexer) {
-	v := in.String()
-	switch LogicalAxes(v) {
+	switch LogicalAxes(s) {
 	case LogicalAxesInline:
 		*t = LogicalAxesInline
 	case LogicalAxesBlock:
 		*t = LogicalAxesBlock
 	case LogicalAxesBoth:
 		*t = LogicalAxesBoth
-
 	default:
-		in.AddError(fmt.Errorf("unknown LogicalAxes value: %v", v))
+		return fmt.Errorf("unknown LogicalAxes value: %v", s)
 	}
+	return nil
 }
 
-// UnmarshalJSON satisfies json.Unmarshaler.
-func (t *LogicalAxes) UnmarshalJSON(buf []byte) error {
-	return easyjson.Unmarshal(buf, t)
+// ScrollOrientation physical scroll orientation.
+//
+// See: https://chromedevtools.github.io/devtools-protocol/tot/DOM#type-ScrollOrientation
+type ScrollOrientation string
+
+// String returns the ScrollOrientation as string value.
+func (t ScrollOrientation) String() string {
+	return string(t)
+}
+
+// ScrollOrientation values.
+const (
+	ScrollOrientationHorizontal ScrollOrientation = "horizontal"
+	ScrollOrientationVertical   ScrollOrientation = "vertical"
+)
+
+// UnmarshalJSON satisfies [json.Unmarshaler].
+func (t *ScrollOrientation) UnmarshalJSON(buf []byte) error {
+	s := string(buf)
+	s = strings.TrimSuffix(strings.TrimPrefix(s, `"`), `"`)
+
+	switch ScrollOrientation(s) {
+	case ScrollOrientationHorizontal:
+		*t = ScrollOrientationHorizontal
+	case ScrollOrientationVertical:
+		*t = ScrollOrientationVertical
+	default:
+		return fmt.Errorf("unknown ScrollOrientation value: %v", s)
+	}
+	return nil
+}
+
+// DetachedElementInfo a structure to hold the top-level node of a detached
+// tree and an array of its retained descendants.
+//
+// See: https://chromedevtools.github.io/devtools-protocol/tot/DOM#type-DetachedElementInfo
+type DetachedElementInfo struct {
+	TreeNode        *cdp.Node    `json:"treeNode"`
+	RetainedNodeIDs []cdp.NodeID `json:"retainedNodeIds"`
 }
 
 // Quad an array of quad vertices, x immediately followed by y for each
@@ -116,22 +131,22 @@ type Quad []float64
 //
 // See: https://chromedevtools.github.io/devtools-protocol/tot/DOM#type-BoxModel
 type BoxModel struct {
-	Content      Quad              `json:"content"`                // Content box
-	Padding      Quad              `json:"padding"`                // Padding box
-	Border       Quad              `json:"border"`                 // Border box
-	Margin       Quad              `json:"margin"`                 // Margin box
-	Width        int64             `json:"width"`                  // Node width
-	Height       int64             `json:"height"`                 // Node height
-	ShapeOutside *ShapeOutsideInfo `json:"shapeOutside,omitempty"` // Shape outside coordinates
+	Content      Quad              `json:"content"`                         // Content box
+	Padding      Quad              `json:"padding"`                         // Padding box
+	Border       Quad              `json:"border"`                          // Border box
+	Margin       Quad              `json:"margin"`                          // Margin box
+	Width        int64             `json:"width"`                           // Node width
+	Height       int64             `json:"height"`                          // Node height
+	ShapeOutside *ShapeOutsideInfo `json:"shapeOutside,omitempty,omitzero"` // Shape outside coordinates
 }
 
 // ShapeOutsideInfo CSS Shape Outside details.
 //
 // See: https://chromedevtools.github.io/devtools-protocol/tot/DOM#type-ShapeOutsideInfo
 type ShapeOutsideInfo struct {
-	Bounds      Quad                  `json:"bounds"`      // Shape bounds
-	Shape       []easyjson.RawMessage `json:"shape"`       // Shape coordinate details
-	MarginShape []easyjson.RawMessage `json:"marginShape"` // Margin shape bounds
+	Bounds      Quad             `json:"bounds"`      // Shape bounds
+	Shape       []jsontext.Value `json:"shape"`       // Shape coordinate details
+	MarginShape []jsontext.Value `json:"marginShape"` // Margin shape bounds
 }
 
 // Rect Rectangle.
@@ -169,31 +184,53 @@ const (
 	EnableIncludeWhitespaceAll  EnableIncludeWhitespace = "all"
 )
 
-// MarshalEasyJSON satisfies easyjson.Marshaler.
-func (t EnableIncludeWhitespace) MarshalEasyJSON(out *jwriter.Writer) {
-	out.String(string(t))
-}
+// UnmarshalJSON satisfies [json.Unmarshaler].
+func (t *EnableIncludeWhitespace) UnmarshalJSON(buf []byte) error {
+	s := string(buf)
+	s = strings.TrimSuffix(strings.TrimPrefix(s, `"`), `"`)
 
-// MarshalJSON satisfies json.Marshaler.
-func (t EnableIncludeWhitespace) MarshalJSON() ([]byte, error) {
-	return easyjson.Marshal(t)
-}
-
-// UnmarshalEasyJSON satisfies easyjson.Unmarshaler.
-func (t *EnableIncludeWhitespace) UnmarshalEasyJSON(in *jlexer.Lexer) {
-	v := in.String()
-	switch EnableIncludeWhitespace(v) {
+	switch EnableIncludeWhitespace(s) {
 	case EnableIncludeWhitespaceNone:
 		*t = EnableIncludeWhitespaceNone
 	case EnableIncludeWhitespaceAll:
 		*t = EnableIncludeWhitespaceAll
-
 	default:
-		in.AddError(fmt.Errorf("unknown EnableIncludeWhitespace value: %v", v))
+		return fmt.Errorf("unknown EnableIncludeWhitespace value: %v", s)
 	}
+	return nil
 }
 
-// UnmarshalJSON satisfies json.Unmarshaler.
-func (t *EnableIncludeWhitespace) UnmarshalJSON(buf []byte) error {
-	return easyjson.Unmarshal(buf, t)
+// GetElementByRelationRelation type of relation to get.
+//
+// See: https://chromedevtools.github.io/devtools-protocol/tot/DOM#method-getElementByRelation
+type GetElementByRelationRelation string
+
+// String returns the GetElementByRelationRelation as string value.
+func (t GetElementByRelationRelation) String() string {
+	return string(t)
+}
+
+// GetElementByRelationRelation values.
+const (
+	GetElementByRelationRelationPopoverTarget  GetElementByRelationRelation = "PopoverTarget"
+	GetElementByRelationRelationInterestTarget GetElementByRelationRelation = "InterestTarget"
+	GetElementByRelationRelationCommandFor     GetElementByRelationRelation = "CommandFor"
+)
+
+// UnmarshalJSON satisfies [json.Unmarshaler].
+func (t *GetElementByRelationRelation) UnmarshalJSON(buf []byte) error {
+	s := string(buf)
+	s = strings.TrimSuffix(strings.TrimPrefix(s, `"`), `"`)
+
+	switch GetElementByRelationRelation(s) {
+	case GetElementByRelationRelationPopoverTarget:
+		*t = GetElementByRelationRelationPopoverTarget
+	case GetElementByRelationRelationInterestTarget:
+		*t = GetElementByRelationRelationInterestTarget
+	case GetElementByRelationRelationCommandFor:
+		*t = GetElementByRelationRelationCommandFor
+	default:
+		return fmt.Errorf("unknown GetElementByRelationRelation value: %v", s)
+	}
+	return nil
 }

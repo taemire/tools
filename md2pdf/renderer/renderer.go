@@ -100,7 +100,9 @@ func RenderToPDF(inputHTML, outputPDF string, opts Options) error {
 	var buf []byte
 	printParams := page.PrintToPDF().
 		WithPrintBackground(true).
-		WithPreferCSSPageSize(true).
+		WithPreferCSSPageSize(false). // Force our dimensions
+		WithPaperWidth(8.27).         // A4 Width in inches
+		WithPaperHeight(11.69).       // A4 Height in inches
 		WithScale(scale).
 		WithLandscape(opts.Landscape).
 		WithMarginTop(0).

@@ -15,6 +15,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -174,6 +176,11 @@ func ConvertToHTML(opts Options) ([]Section, error) {
 
 		// Pre-process
 		stringContent := string(content)
+		fmt.Printf("[DEBUG] Processing file: %s\n", file)
+
+		// Strip YAML frontmatter
+		stringContent = stripFrontmatter(stringContent)
+
 		stringContent = preprocessAlerts(stringContent)
 		stringContent = preprocessHighlight(stringContent)
 		stringContent = preprocessEmoji(stringContent)
@@ -329,27 +336,213 @@ func parseSidebar(sidebarPath, baseDir string) ([]string, error) {
 	return files, nil
 }
 
+type markdownFile struct {
+	path string
+	pos  int
+}
+
+// scanMarkdownFiles discovers markdown files respecting Docusaurus directory
+// hierarchy. Files in subdirectories are grouped under their parent category
+// position (read from _category_.json), matching the sidebar order shown in
+// the Docusaurus web build.
 func scanMarkdownFiles(dir string) ([]string, error) {
-	var files []string
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
+	// Step 1: Collect root-level files and subdirectory groups separately
+	type dirGroup struct {
+		dirPos int    // from _category_.json "position"
+		dirName string
+		files  []markdownFile
+	}
+
+	var rootFiles []markdownFile
+	dirGroups := make(map[string]*dirGroup)
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		fullPath := filepath.Join(dir, entry.Name())
+		if entry.IsDir() {
+			// Read _category_.json for directory position
+			catPos := extractCategoryPosition(fullPath)
+			dg := &dirGroup{dirPos: catPos, dirName: entry.Name()}
+
+			// Collect markdown files in subdirectory
+			subEntries, err := os.ReadDir(fullPath)
+			if err != nil {
+				continue
+			}
+			for _, sub := range subEntries {
+				if sub.IsDir() {
+					continue // only 1-level nesting supported
+				}
+				subPath := filepath.Join(fullPath, sub.Name())
+				if strings.HasSuffix(sub.Name(), ".md") && !strings.HasPrefix(sub.Name(), "_") {
+					pos := extractSidebarPosition(subPath)
+					dg.files = append(dg.files, markdownFile{path: subPath, pos: pos})
+				}
+			}
+			if len(dg.files) > 0 {
+				sortMarkdownFiles(dg.files)
+				dirGroups[entry.Name()] = dg
+			}
+		} else if strings.HasSuffix(entry.Name(), ".md") && !strings.HasPrefix(entry.Name(), "_") {
+			pos := extractSidebarPosition(fullPath)
+			rootFiles = append(rootFiles, markdownFile{path: fullPath, pos: pos})
 		}
-		if !info.IsDir() && strings.HasSuffix(path, ".md") && !strings.HasPrefix(info.Name(), "_") {
-			files = append(files, path)
+	}
+
+	// Step 2: Sort root files
+	sortMarkdownFiles(rootFiles)
+
+	// Step 3: Merge root files and directory groups in correct order
+	// Build a unified ordered list: each item is either a root file or a dir group
+	type orderedItem struct {
+		pos     int
+		isDir   bool
+		dirName string
+		file    *markdownFile
+	}
+
+	var items []orderedItem
+	for i := range rootFiles {
+		items = append(items, orderedItem{pos: rootFiles[i].pos, file: &rootFiles[i]})
+	}
+	for name, dg := range dirGroups {
+		items = append(items, orderedItem{pos: dg.dirPos, isDir: true, dirName: name})
+	}
+
+	sort.SliceStable(items, func(i, j int) bool {
+		if items[i].pos != items[j].pos {
+			return items[i].pos < items[j].pos
 		}
-		return nil
+		// For same position: single files before dirs, then by priority/name
+		if items[i].isDir != items[j].isDir {
+			return !items[i].isDir // files first
+		}
+		if !items[i].isDir && !items[j].isDir {
+			p1 := getFilePriority(items[i].file.path)
+			p2 := getFilePriority(items[j].file.path)
+			if p1 != p2 {
+				return p1 < p2
+			}
+			return items[i].file.path < items[j].file.path
+		}
+		return items[i].dirName < items[j].dirName
 	})
-	return files, err
+
+	// Step 4: Flatten into final ordered list
+	var result []string
+	for _, item := range items {
+		if item.isDir {
+			dg := dirGroups[item.dirName]
+			for _, f := range dg.files {
+				result = append(result, f.path)
+			}
+		} else {
+			result = append(result, item.file.path)
+		}
+	}
+
+	return result, nil
+}
+
+// sortMarkdownFiles sorts a slice of markdownFile by position, priority, then path.
+func sortMarkdownFiles(files []markdownFile) {
+	sort.Slice(files, func(i, j int) bool {
+		if files[i].pos != files[j].pos {
+			return files[i].pos < files[j].pos
+		}
+		p1 := getFilePriority(files[i].path)
+		p2 := getFilePriority(files[j].path)
+		if p1 != p2 {
+			return p1 < p2
+		}
+		return files[i].path < files[j].path
+	})
+}
+
+// extractCategoryPosition reads _category_.json from a directory and returns its "position" value.
+func extractCategoryPosition(dirPath string) int {
+	catFile := filepath.Join(dirPath, "_category_.json")
+	data, err := os.ReadFile(catFile)
+	if err != nil {
+		// Fallback: extract number from directory name prefix
+		base := filepath.Base(dirPath)
+		reNum := regexp.MustCompile(`^(\d+)`)
+		match := reNum.FindStringSubmatch(base)
+		if len(match) > 1 {
+			pos, err := strconv.Atoi(match[1])
+			if err == nil {
+				return pos
+			}
+		}
+		return 999
+	}
+
+	var cat struct {
+		Position int `json:"position"`
+	}
+	if err := json.Unmarshal(data, &cat); err != nil {
+		return 999
+	}
+	return cat.Position
+}
+
+func getFilePriority(filePath string) int {
+	base := strings.ToLower(filepath.Base(filePath))
+	if base == "readme.md" || base == "index.md" || strings.Contains(base, "overview.md") {
+		return -1
+	}
+	if strings.Contains(base, "appendix.md") || strings.Contains(base, "faq.md") {
+		return 100
+	}
+	return 0
+}
+
+func extractSidebarPosition(filePath string) int {
+	content, err := os.ReadFile(filePath)
+	if err == nil {
+		// 1. Try frontmatter sidebar_position
+		re := regexp.MustCompile(`(?m)^sidebar_position:\s*(\d+)`)
+		match := re.FindStringSubmatch(string(content))
+		if len(match) > 1 {
+			pos, err := strconv.Atoi(match[1])
+			if err == nil {
+				return pos
+			}
+		}
+	}
+
+	// 2. Try filename prefix (e.g. 01-...)
+	base := filepath.Base(filePath)
+	reNum := regexp.MustCompile(`^(\d+)`)
+	matchNum := reNum.FindStringSubmatch(base)
+	if len(matchNum) > 1 {
+		pos, err := strconv.Atoi(matchNum[1])
+		if err == nil {
+			return pos
+		}
+	}
+
+	// Default for files without number or position
+	return 999
 }
 
 func extractTitle(content string) (string, int) {
+	// Strip frontmatter before searching for title
+	content = stripFrontmatter(content)
+
 	lines := strings.Split(content, "\n")
 	var secondChoice string
 	inCodeBlock := false
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
 		if strings.HasPrefix(line, "```") {
 			inCodeBlock = !inCodeBlock
 			continue
@@ -368,6 +561,32 @@ func extractTitle(content string) (string, int) {
 		return secondChoice, 2
 	}
 	return "Untitled", 0
+}
+
+func stripFrontmatter(content string) string {
+	trimmed := strings.TrimSpace(content)
+	if !strings.HasPrefix(trimmed, "---") {
+		return content
+	}
+
+	// Find the second "---"
+	lines := strings.Split(content, "\n")
+	foundFirst := false
+	for i, line := range lines {
+		if strings.HasPrefix(strings.TrimSpace(line), "---") {
+			if !foundFirst {
+				foundFirst = true
+				continue
+			}
+			// This is the second ---
+			// Return everything after this line
+			if i+1 < len(lines) {
+				return strings.Join(lines[i+1:], "\n")
+			}
+			return ""
+		}
+	}
+	return content
 }
 
 func generateID(filePath string) string {

@@ -1,0 +1,185 @@
+2026/02/22 20:07:19 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:19 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:19 ERROR: could not unmarshal event: parse error: expected string near offset 917 of 'cookiePart...'
+2026/02/22 20:07:19 ERROR: could not unmarshal event: parse error: expected string near offset 913 of 'cookiePart...'
+2026/02/22 20:07:19 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:19 ERROR: could not unmarshal event: parse error: expected string near offset 1218 of 'cookiePart...'
+2026/02/22 20:07:19 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:19 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:19 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:19 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:19 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:19 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:19 ERROR: could not unmarshal event: parse error: expected string near offset 882 of 'cookiePart...'
+2026/02/22 20:07:19 ERROR: could not unmarshal event: parse error: expected string near offset 882 of 'cookiePart...'
+2026/02/22 20:07:19 ERROR: could not unmarshal event: parse error: expected string near offset 1218 of 'cookiePart...'
+2026/02/22 20:07:19 ERROR: could not unmarshal event: parse error: expected string near offset 882 of 'cookiePart...'
+2026/02/22 20:07:19 ERROR: could not unmarshal event: parse error: expected string near offset 882 of 'cookiePart...'
+2026/02/22 20:07:19 ERROR: could not unmarshal event: parse error: expected string near offset 882 of 'cookiePart...'
+[INFO] PDF has 126 pages
+[INFO] Loaded 141 entries to map
+[INFO] Auto-detecting TOC end page...
+[AUTO-DETECT] Page 3 appears to be TOC (contains 'tkadmin 소개' but no body text)
+[AUTO-DETECT] Content starts at page 8 (first section: 'tkadmin 소개')
+[AUTO-DETECT] TOC ends at page 7 (pages to skip: 7)
+[INFO] Searching from page 8 (skipping 7 pages)
+[FOUND] 'tkadmin 소개' on page 1 (physical: 8)
+[FOUND] 'tkadmin이란?' on page 1 (physical: 8)
+[FOUND] '주요 기능 요약' on page 1 (physical: 8)
+[FOUND] '시스템 요구사항' on page 2 (physical: 9)
+[FOUND] '시스템 구조 다이어그램' on page 3 (physical: 10)
+[FOUND] '화면 구성 미리보기' on page 5 (physical: 12)
+[FOUND] '다음 단계' on page 5 (physical: 12)
+[FOUND] '설치 가이드' on page 5 (physical: 12)
+[FOUND] '사전 요구사항' on page 6 (physical: 13)
+[FOUND] '바이너리 배포' on page 6 (physical: 13)
+[FOUND] '설치 명령어' on page 7 (physical: 14)
+[FOUND] '설치 확인' on page 7 (physical: 14)
+[FOUND] '포트 정보' on page 8 (physical: 15)
+[FOUND] '서비스 제거' on page 8 (physical: 15)
+[FOUND] '업데이트 절차' on page 9 (physical: 16)
+[FOUND] '기타 CLI 옵션' on page 9 (physical: 16)
+[FOUND] '다음 단계' on page 10 (physical: 17)
+[FOUND] '배포 가이드 (시스템 관리자)' on page 11 (physical: 18)
+[FOUND] '배포 사전 요구사항' on page 11 (physical: 18)
+[FOUND] '신규 설치 절차' on page 11 (physical: 18)
+[FOUND] '업데이트 절차' on page 13 (physical: 20)
+[FOUND] '로그 경로 검증' on page 14 (physical: 21)
+[FOUND] '서비스 제거' on page 15 (physical: 22)
+[FOUND] '배포 체크리스트' on page 16 (physical: 23)
+[FOUND] '배포 수칙 요약' on page 16 (physical: 23)
+[FOUND] '최초 접속 가이드' on page 17 (physical: 24)
+[FOUND] 'TACHYON 대시보드에서 접근하기' on page 17 (physical: 24)
+[FOUND] '직접 URL 접근' on page 18 (physical: 25)
+[FOUND] 'Recovery Mode 접근 (긴급 시)' on page 18 (physical: 25)
+[FOUND] '화면 구성 소개' on page 19 (physical: 26)
+[FOUND] '나가기 버튼' on page 20 (physical: 27)
+[FOUND] '다음 단계' on page 21 (physical: 28)
+[FOUND] '대시보드' on page 21 (physical: 28)
+[FOUND] '개요' on page 22 (physical: 29)
+[FOUND] '상단 장애 알림 배너' on page 22 (physical: 29)
+[FOUND] '알림 버튼 및 뱃지' on page 23 (physical: 30)
+[FOUND] '카드 섹션' on page 23 (physical: 30)
+[FOUND] '자동 갱신' on page 26 (physical: 33)
+[FOUND] '조작 순서 요약' on page 27 (physical: 34)
+[FOUND] '다음 단계' on page 27 (physical: 34)
+[FOUND] '내/외부 설정 편집기' on page 27 (physical: 34)
+[FOUND] '개요' on page 28 (physical: 35)
+[FOUND] '설정 항목 상세' on page 28 (physical: 35)
+[FOUND] '설정 파일 위치' on page 32 (physical: 39)
+[FOUND] '클라이언트 IP 표시 기능' on page 32 (physical: 39)
+[FOUND] '저장 플로우' on page 32 (physical: 39)
+[FOUND] '설정 취소' on page 33 (physical: 40)
+[FOUND] '조작 순서 요약' on page 33 (physical: 40)
+[FOUND] '다음 단계' on page 34 (physical: 41)
+[FOUND] '전문가 편집기' on page 35 (physical: 42)
+[FOUND] '개요' on page 35 (physical: 42)
+[FOUND] '화면 구성' on page 35 (physical: 42)
+[FOUND] '파일 트리 탐색' on page 35 (physical: 42)
+[FOUND] '파일 열기 및 편집' on page 36 (physical: 43)
+[FOUND] '저장 프로세스' on page 38 (physical: 45)
+[FOUND] '보안' on page 38 (physical: 45)
+[FOUND] '주의사항' on page 39 (physical: 46)
+[FOUND] '관련 API' on page 39 (physical: 46)
+[FOUND] '다음 단계' on page 40 (physical: 47)
+[FOUND] '설정 파일 레퍼런스' on page 41 (physical: 48)
+[FOUND] '설정 파일 경로' on page 41 (physical: 48)
+[FOUND] '전체 설정 옵션' on page 41 (physical: 48)
+[FOUND] '설정 파일 전체 예시' on page 45 (physical: 52)
+[FOUND] '주요 설정 항목 상세' on page 45 (physical: 52)
+[FOUND] '환경 탐색(Discovery) 우선순위' on page 47 (physical: 54)
+[FOUND] '서비스 관리' on page 49 (physical: 56)
+[FOUND] '개요' on page 49 (physical: 56)
+[FOUND] '서비스 목록 표시' on page 49 (physical: 56)
+[FOUND] '서비스 제어' on page 50 (physical: 57)
+[FOUND] 'Watchdog 자동 복구' on page 51 (physical: 58)
+[FOUND] 'Watchdog 오탐 방지' on page 52 (physical: 59)
+[FOUND] '주의사항' on page 54 (physical: 61)
+[FOUND] '관련 API' on page 55 (physical: 62)
+[FOUND] '다음 단계' on page 55 (physical: 62)
+[FOUND] '환경 체크' on page 55 (physical: 62)
+[FOUND] '개요' on page 56 (physical: 63)
+[FOUND] '화면 구성' on page 56 (physical: 63)
+[FOUND] 'OS Limits 확인 및 설정' on page 56 (physical: 63)
+[FOUND] 'SELinux 상태 제어' on page 57 (physical: 64)
+[FOUND] '방화벽(Firewalld) 포트 관리' on page 58 (physical: 65)
+[FOUND] '주의사항' on page 59 (physical: 66)
+[FOUND] '관련 API' on page 60 (physical: 67)
+[FOUND] '다음 단계' on page 60 (physical: 67)
+[FOUND] '시스템 로그' on page 60 (physical: 67)
+[FOUND] '개요' on page 61 (physical: 68)
+[FOUND] '화면 구성' on page 61 (physical: 68)
+[FOUND] '실시간 로그 추적' on page 62 (physical: 69)
+[FOUND] '필터링 기능' on page 62 (physical: 69)
+[FOUND] '과거 로그 조회 (무한 스크롤)' on page 64 (physical: 71)
+[FOUND] '로그 상세 데이터 확장' on page 64 (physical: 71)
+[FOUND] '성능' on page 65 (physical: 72)
+[FOUND] '주의사항' on page 65 (physical: 72)
+[FOUND] '관련 API' on page 65 (physical: 72)
+[FOUND] '다음 단계' on page 66 (physical: 73)
+[FOUND] '서비스 로그 뷰어' on page 67 (physical: 74)
+[FOUND] '개요' on page 67 (physical: 74)
+[FOUND] '화면 구성' on page 67 (physical: 74)
+[FOUND] '주요 기능' on page 68 (physical: 75)
+[FOUND] '대시보드에서 바로 가기' on page 71 (physical: 78)
+[FOUND] '지원 서비스' on page 71 (physical: 78)
+[FOUND] '비활성 탭 최적화' on page 71 (physical: 78)
+[FOUND] '팁' on page 71 (physical: 78)
+[FOUND] '관리자 보고' on page 73 (physical: 80)
+[FOUND] '개요' on page 73 (physical: 80)
+[FOUND] '화면 구성' on page 73 (physical: 80)
+[FOUND] '보고 유형' on page 73 (physical: 80)
+[FOUND] '필터링 기능' on page 74 (physical: 81)
+[FOUND] '읽음 관리' on page 75 (physical: 82)
+[FOUND] '실시간 갱신' on page 76 (physical: 83)
+[FOUND] '알림 배너 정책' on page 76 (physical: 83)
+[FOUND] '알림 데이터 영속성' on page 77 (physical: 84)
+[FOUND] '주의사항' on page 78 (physical: 85)
+[FOUND] '관련 API' on page 78 (physical: 85)
+[FOUND] '다음 단계' on page 79 (physical: 86)
+[FOUND] 'Recovery Mode (긴급 복구 모드)' on page 80 (physical: 87)
+[FOUND] '개요' on page 80 (physical: 87)
+[FOUND] '접근 방법' on page 80 (physical: 87)
+[FOUND] '인증 방식' on page 80 (physical: 87)
+[FOUND] 'IP 기반 접근 제어 (ACL)' on page 82 (physical: 89)
+[FOUND] '제공 API (제한적)' on page 83 (physical: 90)
+[FOUND] '사용 시나리오' on page 83 (physical: 90)
+[FOUND] '보안 고려사항' on page 84 (physical: 91)
+[FOUND] 'API 레퍼런스' on page 85 (physical: 92)
+[FOUND] '공통 사항' on page 85 (physical: 92)
+[FOUND] '설정 관리' on page 88 (physical: 95)
+[FOUND] '외부 파일 편집' on page 92 (physical: 99)
+[FOUND] '서비스 제어' on page 94 (physical: 101)
+[FOUND] '알림 / 감사 로그' on page 96 (physical: 103)
+[FOUND] '환경 체크' on page 99 (physical: 106)
+[FOUND] '로그 조회' on page 102 (physical: 109)
+[FOUND] '서비스 파일 로그 (v0.2.2)' on page 103 (physical: 110)
+[FOUND] '자주 묻는 질문 (FAQ)' on page 110 (physical: 117)
+[FOUND] 'Q1. 로그인이 안 됩니다' on page 110 (physical: 117)
+[FOUND] 'Q2. 서비스가 시작되지 않습니다' on page 111 (physical: 118)
+[FOUND] 'Q3. 설정 변경 후 반영되지 않습니다' on page 112 (physical: 119)
+[FOUND] 'Q4. 로그가 표시되지 않습니다' on page 113 (physical: 120)
+[FOUND] 'Q5. 알림 배너가 사라지지 않습니다' on page 114 (physical: 121)
+[FOUND] 'Q5-1. 서비스가 자체 업데이트 중인데 장애 알림이 발생합니다' on page 115 (physical: 122)
+[FOUND] 'Q6. 긴급 복구 모드로 접근하려면?' on page 116 (physical: 123)
+[FOUND] 'Q7. TACHYON 대시보드에 Admin 메뉴가 보이지 않습니다' on page 117 (physical: 124)
+[FOUND] 'Q8. 전문가 편집기에서 저장이 실패합니다' on page 118 (physical: 125)
+[SUCCESS] Analysis saved to /var/folders/6y/nc4px7zx1cnfh41fvx_6dqz40000gn/T/md2pdf-2662905676/pages.json
+2026/02/22 20:07:25 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:25 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:25 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:25 ERROR: could not unmarshal event: parse error: expected string near offset 913 of 'cookiePart...'
+2026/02/22 20:07:25 ERROR: could not unmarshal event: parse error: expected string near offset 917 of 'cookiePart...'
+2026/02/22 20:07:25 ERROR: could not unmarshal event: parse error: expected string near offset 1220 of 'cookiePart...'
+2026/02/22 20:07:25 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:25 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:25 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:25 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:25 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:25 ERROR: could not unmarshal event: unknown IPAddressSpace value: Loopback
+2026/02/22 20:07:25 ERROR: could not unmarshal event: parse error: expected string near offset 882 of 'cookiePart...'
+2026/02/22 20:07:25 ERROR: could not unmarshal event: parse error: expected string near offset 1214 of 'cookiePart...'
+2026/02/22 20:07:25 ERROR: could not unmarshal event: parse error: expected string near offset 882 of 'cookiePart...'
+2026/02/22 20:07:25 ERROR: could not unmarshal event: parse error: expected string near offset 882 of 'cookiePart...'
+2026/02/22 20:07:25 ERROR: could not unmarshal event: parse error: expected string near offset 882 of 'cookiePart...'
+2026/02/22 20:07:25 ERROR: could not unmarshal event: parse error: expected string near offset 882 of 'cookiePart...'
