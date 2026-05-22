@@ -89,6 +89,7 @@ SEP='###SEP###'
 
 # git log 결과 수집 및 동적 컬럼 너비 계산
 MAX_TAG_LEN=3
+MAX_HASH_LEN=4 # "Hash" 헤더 길이
 MAX_REV_LEN=${#TOTAL}
 ((MAX_REV_LEN++)) # 'r' 접두사 포함
 if [[ $MAX_REV_LEN -lt 3 ]]; then
@@ -116,16 +117,20 @@ while IFS= read -r line; do
         MAX_TAG_LEN=${#tag}
     fi
 
+    if [[ ${#hash} -gt $MAX_HASH_LEN ]]; then
+        MAX_HASH_LEN=${#hash}
+    fi
+
     ENTRIES+=("r${CURRENT}${SEP}${tag}${SEP}${hash}${SEP}${time}${SEP}${desc}")
     ((CURRENT--))
 done < <(git log --pretty=tformat:"%h${SEP}%s${SEP}%ad${SEP}%D" --date=format:'%Y-%m-%d %H:%M:%S' -n "$COUNT")
 
 # 헤더 출력
-printf "%-${MAX_REV_LEN}s %-${MAX_TAG_LEN}s %-7s %-19s %s\n" "Rev" "Tag" "Hash" "Time" "Description"
+printf "%-${MAX_REV_LEN}s %-${MAX_TAG_LEN}s %-${MAX_HASH_LEN}s %-19s %s\n" "Rev" "Tag" "Hash" "Time" "Description"
 printf "%s %s %s %s %s\n" \
     "$(printf '%*s' "$MAX_REV_LEN" '' | tr ' ' '-')" \
     "$(printf '%*s' "$MAX_TAG_LEN" '' | tr ' ' '-')" \
-    "$(printf '%*s' 7 '' | tr ' ' '-')" \
+    "$(printf '%*s' "$MAX_HASH_LEN" '' | tr ' ' '-')" \
     "$(printf '%*s' 19 '' | tr ' ' '-')" \
     "$(printf '%*s' 30 '' | tr ' ' '-')"
 
@@ -136,7 +141,7 @@ for entry in "${ENTRIES[@]}"; do
     hash="${rest%%${SEP}*}"; rest="${rest#*${SEP}}"
     time="${rest%%${SEP}*}"; desc="${rest#*${SEP}}"
 
-    printf "%-${MAX_REV_LEN}s %-${MAX_TAG_LEN}s %-7s %-19s %s\n" "$rev" "$tag" "$hash" "$time" "$desc"
+    printf "%-${MAX_REV_LEN}s %-${MAX_TAG_LEN}s %-${MAX_HASH_LEN}s %-19s %s\n" "$rev" "$tag" "$hash" "$time" "$desc"
 done
 
 echo
