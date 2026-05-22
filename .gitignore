@@ -16,3 +16,6 @@ ref/
 
 # AI Agent Configuration (명시적 추적)
 !.agent/
+
+# Harness runtime sessions (PID/heartbeat ephemeral state)
+.harness/
