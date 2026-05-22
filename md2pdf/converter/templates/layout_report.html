@@ -386,6 +386,12 @@
             border-radius: 8px;
         }
 
+        .mermaid svg {
+            max-width: 100%;
+            max-height: 230mm;
+            height: auto;
+        }
+
         /* Docsify Alerts */
         .alert {
             padding: 16px;
@@ -655,9 +661,12 @@
             }
 
             img,
-            table,
-            .mermaid {
+            table {
                 page-break-inside: avoid;
+            }
+
+            .mermaid {
+                page-break-inside: auto;
             }
 
             /* UI 목업 및 Alert 박스 페이지 잘림 방지 */
@@ -1017,10 +1026,11 @@
                 <div class="info-text">Author: {{.Author}}</div>
                 {{end}}
 
+                {{if .Copyright}}
                 <div class="copyright">
-                    © {{if .Date}}{{slice .Date 0 4}}{{else}}2025{{end}} {{if .Copyright}}{{.Copyright}}{{else}}INCA
-                    Internet Co., Ltd.{{end}}. All rights reserved.
+                    © {{if .Date}}{{slice .Date 0 4}}{{else}}2025{{end}} {{.Copyright}}. All rights reserved.
                 </div>
+                {{end}}
             </div>
         </div>
 
@@ -1058,7 +1068,7 @@
         </div>
     </div>
     <!-- Mermaid.js -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
     <script>
         mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
     </script>
