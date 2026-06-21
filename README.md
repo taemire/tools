@@ -16,21 +16,14 @@
   ```
 - **위치**: `md2pdf/` (Go 소스)
 
-### 2. md2pdf_v2 호환 래퍼
-- **파일**: `md2pdf_v2.bat` (Windows), `md2pdf_v2.sh` (macOS/Linux)
-- **기능**: 기존 `md2pdf_v2` 호출을 `md2pdf/md2pdf` 통합 바이너리로 전달하는 호환 래퍼.
-- **권장**: 신규 사용은 `md2pdf/md2pdf` 바이너리를 직접 호출합니다.
-
----
-
 ## 🛠️ 개발 유틸리티 (Utilities)
 
-### 3. [revlog](revlog.bat)
+### 2. [revlog](revlog.bat)
 - **파일**: `revlog.bat` (Windows), `revlog.sh` (macOS/Linux)
 - **기능**: Git 리포지토리의 커밋 히스토리 및 태그 정보를 직관적인 그래프로 조회.
 - **사용법**: `revlog [-n count]`
 
-### 4. [outlook_crawler](outlook_crawler)
+### 3. [outlook_crawler](outlook_crawler)
 - **기능**: Outlook 이메일 데이터를 수집 및 분석하는 도구.
 - **위치**: `outlook_crawler/` (Node.js/Python 등)
 
@@ -42,7 +35,7 @@
 - **md2html_v2**: `md2pdf` 통합 바이너리의 `converter/` 패키지로 흡수됨.
 - **html2pdf**: `md2pdf` 통합 바이너리의 `renderer/` 패키지로 흡수됨.
 - **md2pdf (v1)**: `md2pdf/` 통합 바이너리로 대체됨.
-- **md2pdf_v2 래퍼**: 기존 호출 호환용으로만 유지됨. 신규 사용은 `md2pdf/md2pdf` 직접 호출 권장.
+- **md2pdf_v2 래퍼**: `md2pdf/` 통합 바이너리 직접 호출로 대체되어 제거됨.
 
 ---
 
