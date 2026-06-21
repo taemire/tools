@@ -4,11 +4,11 @@
 #
 # Usage: md2pdf_v2.sh -i <input_dir> -o <output_file> [options]
 #
-# This script is a thin wrapper around the unified md2pdf binary.
+# This script is a compatibility wrapper around the unified md2pdf binary.
 # It auto-builds md2pdf if not found and forwards all arguments.
 #
 # NOTE: This script is maintained for backward compatibility.
-#       Direct usage of md2pdf binary is recommended.
+#       Direct usage of md2pdf/md2pdf is recommended for new callers.
 # ==============================================================================
 
 set -eu
@@ -42,4 +42,5 @@ if [ ! -f "$MD2PDF_BIN" ]; then
 fi
 
 # --- Forward all arguments to md2pdf ---
+echo "[INFO] md2pdf_v2.sh is a compatibility wrapper; use ${MD2PDF_BIN} directly for new scripts." >&2
 exec "$MD2PDF_BIN" "$@"

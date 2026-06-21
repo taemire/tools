@@ -7,11 +7,11 @@ chcp 65001 >nul
 ::
 :: Usage: md2pdf_v2.bat -i <input_dir> -o <output_file> [options]
 ::
-:: This script is a thin wrapper around the unified md2pdf binary.
+:: This script is a compatibility wrapper around the unified md2pdf binary.
 :: It auto-builds md2pdf if not found and forwards all arguments.
 ::
 :: NOTE: This script is maintained for backward compatibility.
-::       Direct usage of md2pdf binary is recommended.
+::       Direct usage of md2pdf\md2pdf.exe is recommended for new callers.
 :: ==============================================================================
 
 set TOOL_DIR=%~dp0
@@ -38,6 +38,7 @@ if not exist "%MD2PDF_BIN%" (
 )
 
 :: Forward all arguments to md2pdf
+echo [INFO] md2pdf_v2.bat is a compatibility wrapper; use "%MD2PDF_BIN%" directly for new scripts.
 "%MD2PDF_BIN%" %*
 
 exit /b %ERRORLEVEL%

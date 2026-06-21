@@ -10,12 +10,34 @@ if "%~1"=="" goto :main
 if /i "%~1"=="-h" goto :print_usage
 if /i "%~1"=="--help" goto :print_usage
 if /i "%~1"=="-n" (
+    if "%~2"=="" (
+        echo [ERROR] -n requires a positive integer value.
+        echo Run: revlog.bat --help
+        exit /b 1
+    )
+    echo %~2| findstr /r "^[1-9][0-9]*$" >nul
+    if errorlevel 1 (
+        echo [ERROR] -n must be a positive integer: %~2
+        echo Run: revlog.bat --help
+        exit /b 1
+    )
     set COUNT=%~2
     shift
     shift
     goto :parse_args
 )
 if /i "%~1"=="--count" (
+    if "%~2"=="" (
+        echo [ERROR] --count requires a positive integer value.
+        echo Run: revlog.bat --help
+        exit /b 1
+    )
+    echo %~2| findstr /r "^[1-9][0-9]*$" >nul
+    if errorlevel 1 (
+        echo [ERROR] --count must be a positive integer: %~2
+        echo Run: revlog.bat --help
+        exit /b 1
+    )
     set COUNT=%~2
     shift
     shift
@@ -33,7 +55,7 @@ goto :parse_args
 
 :print_usage
 echo.
-echo Usage: check_version.bat [OPTIONS]
+echo Usage: revlog.bat [OPTIONS]
 echo.
 echo Display git commit history and version information in a formatted table.
 echo.
@@ -45,10 +67,10 @@ echo   -p, --no-pager          Disable pagination (useful for full output)
 echo   -h, --help              Display this help message
 echo.
 echo Examples:
-echo   check_version.bat
-echo   check_version.bat -n 20
-echo   check_version.bat --full
-echo   check_version.bat -a -f -p
+echo   revlog.bat
+echo   revlog.bat -n 20
+echo   revlog.bat --full
+echo   revlog.bat -a -f -p
 echo.
 goto :eof
 

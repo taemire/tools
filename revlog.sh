@@ -5,6 +5,16 @@ SHOW_FULL=0
 SHOW_ALL=0
 NO_PAGER=0
 
+die() {
+    echo "[ERROR] $*" >&2
+    echo "Run: revlog.sh --help" >&2
+    exit 1
+}
+
+is_positive_integer() {
+    [[ "$1" =~ ^[1-9][0-9]*$ ]]
+}
+
 # 옵션 파싱
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -30,6 +40,12 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         -n|--count)
+            if [[ $# -lt 2 || "${2:-}" == -* ]]; then
+                die "$1 requires a positive integer value"
+            fi
+            if ! is_positive_integer "$2"; then
+                die "$1 must be a positive integer: $2"
+            fi
             COUNT="$2"
             shift 2
             ;;
@@ -54,6 +70,10 @@ done
 # --all 이면 커밋 수 제한 해제
 if [[ "$SHOW_ALL" -eq 1 ]]; then
     COUNT=999999
+fi
+
+if ! is_positive_integer "$COUNT"; then
+    die "count must be a positive integer: $COUNT"
 fi
 
 # 리포지토리 정보 가져오기

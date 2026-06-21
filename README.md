@@ -10,15 +10,16 @@
 - **사용법**:
   ```bash
   # PDF 생성
-  md2pdf -i docs/manual -o manual.pdf -title "사용자 매뉴얼" -version "1.0.0"
+  md2pdf/md2pdf -i docs/manual -o manual.pdf -title "사용자 매뉴얼" -version "1.0.0"
   # HTML만 생성
-  md2pdf -i docs/manual -o manual.html -html-only
+  md2pdf/md2pdf -i docs/manual -o manual.html -html-only
   ```
 - **위치**: `md2pdf/` (Go 소스)
 
-### 2. [md2pdf_v2](md2pdf_v2.bat) (호환 래퍼)
+### 2. md2pdf_v2 호환 래퍼
 - **파일**: `md2pdf_v2.bat` (Windows), `md2pdf_v2.sh` (macOS/Linux)
-- **기능**: `md2pdf` 바이너리의 래퍼 스크립트. 기존 호출 호환 유지.
+- **기능**: 기존 `md2pdf_v2` 호출을 `md2pdf/md2pdf` 통합 바이너리로 전달하는 호환 래퍼.
+- **권장**: 신규 사용은 `md2pdf/md2pdf` 바이너리를 직접 호출합니다.
 
 ---
 
@@ -33,13 +34,6 @@
 - **기능**: Outlook 이메일 데이터를 수집 및 분석하는 도구.
 - **위치**: `outlook_crawler/` (Node.js/Python 등)
 
-### 5. [mp4towebp.bat](mp4towebp.bat)
-- **기능**: MP4 동영상을 고효율 WebP 애니메이션으로 변환 (문서 첨부 최적화).
-- **특징**: FFmpeg 자동 설치 지원.
-- **사용법**: `mp4towebp.bat input.mp4 [output.webp]`
-
----
-
 ## 🗄️ 아카이브 (Archived)
 
 사용되지 않거나 대체된 도구들은 `_archive/` 디렉토리로 이동되었습니다.
@@ -47,8 +41,8 @@
 - **md2html (v1)**: `md2html_v2`로 대체됨.
 - **md2html_v2**: `md2pdf` 통합 바이너리의 `converter/` 패키지로 흡수됨.
 - **html2pdf**: `md2pdf` 통합 바이너리의 `renderer/` 패키지로 흡수됨.
-- **md2pdf (v1)**: `md2pdf_v2` 스크립트 방식(html2pdf 기반)으로 대체됨.
-- **md2pdf_v2 (Go Source)**: Go 네이티브 PDF 생성 시도 버전. 중단됨.
+- **md2pdf (v1)**: `md2pdf/` 통합 바이너리로 대체됨.
+- **md2pdf_v2 래퍼**: 기존 호출 호환용으로만 유지됨. 신규 사용은 `md2pdf/md2pdf` 직접 호출 권장.
 
 ---
 
