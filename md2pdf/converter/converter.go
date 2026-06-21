@@ -181,6 +181,12 @@ func ConvertToHTML(opts Options) ([]Section, error) {
 		// Strip YAML frontmatter
 		stringContent = stripFrontmatter(stringContent)
 
+		// Strip a redundant in-document "manual TOC" block. md2pdf always
+		// auto-generates its own TOC, so a manual one is redundant; more
+		// importantly its rendered link text hijacks the page-number
+		// analyzer's title search, forcing every TOC entry onto page 1.
+		stringContent = stripManualTOC(stringContent)
+
 		stringContent = preprocessAlerts(stringContent)
 		stringContent = preprocessHighlight(stringContent)
 		stringContent = preprocessEmoji(stringContent)
@@ -587,6 +593,62 @@ func stripFrontmatter(content string) string {
 		}
 	}
 	return content
+}
+
+// stripManualTOC removes an in-document "manual TOC": a heading whose text is
+// 목차 / 차례 / Table of Contents / Contents / TOC, immediately followed by a
+// block containing intra-document anchor links (](#...)). It is removed only
+// when such links are present, so an ordinary section that merely happens to be
+// titled "목차" is left intact. This eliminates the redundant second TOC and,
+// critically, prevents the manual TOC's link text from hijacking the analyzer's
+// title search (which otherwise resolves every TOC page number to 1).
+func stripManualTOC(content string) string {
+	lines := strings.Split(content, "\n")
+	headingRe := regexp.MustCompile(`^#{1,6}\s+(.*\S)\s*$`)
+	hrRe := regexp.MustCompile(`^\s*(-{3,}|\*{3,}|_{3,})\s*$`)
+	linkRe := regexp.MustCompile(`\]\(#`)
+	nonWord := regexp.MustCompile(`[^\p{L}\p{N}]+`)
+	tocNames := map[string]bool{
+		"목차": true, "차례": true, "toc": true,
+		"tableofcontents": true, "contents": true,
+	}
+
+	isTOCHeading := func(line string) bool {
+		m := headingRe.FindStringSubmatch(line)
+		if m == nil {
+			return false
+		}
+		norm := strings.ToLower(nonWord.ReplaceAllString(m[1], ""))
+		return tocNames[norm]
+	}
+
+	out := make([]string, 0, len(lines))
+	for i := 0; i < len(lines); i++ {
+		if isTOCHeading(lines[i]) {
+			// Scan the block until the next heading / horizontal rule / EOF.
+			j := i + 1
+			hasLink := false
+			for j < len(lines) {
+				if headingRe.MatchString(lines[j]) || hrRe.MatchString(lines[j]) {
+					break
+				}
+				if linkRe.MatchString(lines[j]) {
+					hasLink = true
+				}
+				j++
+			}
+			if hasLink {
+				// Drop the heading + block; also consume a single trailing rule.
+				if j < len(lines) && hrRe.MatchString(lines[j]) {
+					j++
+				}
+				i = j - 1
+				continue
+			}
+		}
+		out = append(out, lines[i])
+	}
+	return strings.Join(out, "\n")
 }
 
 func generateID(filePath string) string {

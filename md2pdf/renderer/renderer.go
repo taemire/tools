@@ -94,6 +94,23 @@ func RenderToPDF(inputHTML, outputPDF string, opts Options) error {
 	if mermaidDone {
 		fmt.Println("[INFO] Waiting for Mermaid diagrams...")
 		_ = chromedp.Run(ctx, chromedp.Sleep(5*time.Second))
+
+		// Mermaid can leave stray measurement nodes appended directly under
+		// <body>, which render as an extra blank trailing page. Remove any
+		// body-level node that is not the document container or a script/style.
+		var strayRemoved int
+		_ = chromedp.Run(ctx, chromedp.Evaluate(`(function(){
+  var removed = 0;
+  Array.prototype.slice.call(document.body.children).forEach(function(el){
+    if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
+    if (el.classList && el.classList.contains('document-container')) return;
+    el.parentNode.removeChild(el); removed++;
+  });
+  return removed;
+})()`, &strayRemoved))
+		if strayRemoved > 0 {
+			fmt.Printf("[INFO] Removed %d stray node(s) before print (Mermaid cleanup)\n", strayRemoved)
+		}
 	}
 
 	// Print to PDF
