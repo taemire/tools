@@ -23,10 +23,6 @@
 - **기능**: Git 리포지토리의 커밋 히스토리 및 태그 정보를 직관적인 그래프로 조회.
 - **사용법**: `revlog [-n count]`
 
-### 3. [outlook_crawler](outlook_crawler)
-- **기능**: Outlook 이메일 데이터를 수집 및 분석하는 도구.
-- **위치**: `outlook_crawler/` (Node.js/Python 등)
-
 ## 🗄️ 아카이브 (Archived)
 
 사용되지 않거나 대체된 도구들은 `_archive/` 디렉토리로 이동되었습니다.

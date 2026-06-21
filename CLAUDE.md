@@ -8,7 +8,6 @@
 `tools`는 여러 프로젝트에서 공통으로 사용하는 개발, 빌드, 문서화 유틸리티 모음이다.
 
 - `md2pdf/`: Markdown을 HTML/PDF로 변환하는 Go 기반 통합 도구
-- `outlook_crawler/`: Outlook 데이터 수집/분석 도구
 - `_archive/`: 대체되었거나 사용 중단된 도구 보관 영역
 - 루트의 `*.sh`, `*.bat`: 호환 래퍼 또는 단일 목적 유틸리티
 
