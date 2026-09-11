@@ -86,6 +86,8 @@
             padding: 0;
         }
 
+        .toc-page { float: right; min-width: 30px; text-align: right; }
+
         .toc li {
             margin: 12px 0;
         }
@@ -308,7 +310,12 @@
         <h2>📋 목차</h2>
         <ul>
             {{range $i, $s := .Sections}}
-            <li><a href="#{{$s.ID}}">{{inc $i}}. {{$s.Title}}</a></li>
+            <li><a href="#{{$s.ID}}">{{inc $i}}. {{$s.Title}}</a>
+                <span class="toc-page">{{if gt $s.PageNumber 0}}{{$s.PageNumber}}{{else}}&#160;{{end}}</span></li>
+            {{range $sub := $s.SubHeadings}}
+            <li style="margin-left: 20px"><a href="#{{$sub.ID}}">{{$sub.Title}}</a>
+                <span class="toc-page">{{if gt $sub.PageNumber 0}}{{$sub.PageNumber}}{{else}}&#160;{{end}}</span></li>
+            {{end}}
             {{end}}
         </ul>
     </div>

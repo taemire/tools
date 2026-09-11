@@ -846,13 +846,13 @@
             <li class="toc-item">
                 <span class="toc-title"><a href="#{{$s.ID}}">{{$s.Title}}</a></span>
                 <span class="toc-dots"></span>
-                <a href="#{{$s.ID}}"><i class="fas fa-arrow-right toc-link-icon"></i></a>
+                <span class="toc-page" style="min-width: 30px; flex-shrink: 0; text-align: right">{{if gt $s.PageNumber 0}}{{$s.PageNumber}}{{else}}&#160;{{end}}</span>
             </li>
             {{range $j, $sub := $s.SubHeadings}}
             <li class="toc-item toc-sub-item{{if eq $sub.Level 3}} toc-sub-item-l3{{end}}">
                 <span class="toc-title"><a href="#{{$sub.ID}}">{{$sub.Title}}</a></span>
                 <span class="toc-dots"></span>
-                <a href="#{{$sub.ID}}"><i class="fas fa-arrow-right toc-link-icon"></i></a>
+                <span class="toc-page" style="min-width: 30px; flex-shrink: 0; text-align: right">{{if gt $sub.PageNumber 0}}{{$sub.PageNumber}}{{else}}&#160;{{end}}</span>
             </li>
             {{end}}
             {{end}}

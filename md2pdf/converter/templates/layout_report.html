@@ -170,7 +170,8 @@
             color: #0056b3;
             text-decoration: none;
             font-weight: 500;
-            flex: 0 0 auto;
+            flex: 0 1 auto;
+            min-width: 0;
         }
 
         .toc a:hover {
@@ -188,7 +189,8 @@
             color: #0056b3;
             text-decoration: none;
             font-weight: 500;
-            flex: 0 0 auto;
+            flex: 0 1 auto;
+            min-width: 0;
         }
 
         .toc a:hover {
@@ -207,6 +209,7 @@
             font-weight: 600;
             font-size: 14px;
             min-width: 30px;
+            flex-shrink: 0;
             text-align: right;
         }
 
@@ -1043,14 +1046,14 @@
                     {{range $i, $s := .Sections}}
                     <li>
                         <a href="#{{$s.ID}}">{{$s.Title}}</a>
-                        {{if gt $s.PageNumber 0}}<span class="toc-dots"></span><span
-                            class="toc-page">{{$s.PageNumber}}</span>{{end}}
+                        <span class="toc-dots"></span><span
+                            class="toc-page">{{if gt $s.PageNumber 0}}{{$s.PageNumber}}{{else}}&#160;{{end}}</span>
                     </li>
                     {{range $j, $sub := $s.SubHeadings}}
                     <li class="toc-sub{{if eq $sub.Level 3}} toc-sub-l3{{end}}">
                         <a href="#{{$sub.ID}}">{{$sub.Title}}</a>
-                        {{if gt $sub.PageNumber 0}}<span class="toc-dots"></span><span
-                            class="toc-page">{{$sub.PageNumber}}</span>{{end}}
+                        <span class="toc-dots"></span><span
+                            class="toc-page">{{if gt $sub.PageNumber 0}}{{$sub.PageNumber}}{{else}}&#160;{{end}}</span>
                     </li>
                     {{end}}
                     {{end}}

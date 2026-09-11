@@ -162,7 +162,7 @@ func ConvertToHTML(opts Options) ([]Section, error) {
 
 	// Convert each file
 	var sections []Section
-	for _, file := range files {
+	for fileIndex, file := range files {
 		if len(files) > 1 && strings.EqualFold(filepath.Base(file), "readme.md") {
 			fmt.Printf("[INFO] Skipping %s (Web landing page)\n", filepath.Base(file))
 			continue
@@ -214,8 +214,29 @@ func ConvertToHTML(opts Options) ([]Section, error) {
 		}
 
 		titleText, level := extractTitle(string(content))
-		id := generateID(file)
+		// Keep legacy fragment anchors for existing Markdown links, while TOC
+		// destinations use an ASCII file/heading namespace independent of text.
+		id := fmt.Sprintf("md2pdf-section-%d", fileIndex+1)
+		legacyID := generateID(file)
+		if strings.HasPrefix(legacyID, "md2pdf-section-") || regexp.MustCompile(`(?i)\bid\s*=\s*["']?md2pdf-section-`).MatchString(htmlContent) {
+			return nil, fmt.Errorf("reserved TOC anchor prefix md2pdf-section- in %s", file)
+		}
 		subHeadings := extractSubHeadings(htmlContent)
+		for i := range subHeadings {
+			oldID := subHeadings[i].ID
+			subHeadings[i].ID = fmt.Sprintf("%s-heading-%d", id, i+1)
+			// Wrap the title, so even a heading broken across pages points to
+			// its first line. A separate empty block can land on the prior page.
+			re := regexp.MustCompile(`(?s)(<h2\s+id="` + regexp.QuoteMeta(oldID) + `"[^>]*>)(.*?)(</h2>)`)
+			htmlContent = re.ReplaceAllStringFunc(htmlContent, func(heading string) string {
+				m := re.FindStringSubmatch(heading)
+				return m[1] + `<span id="` + subHeadings[i].ID + `">` + m[2] + `</span>` + m[3]
+			})
+			if strings.Count(htmlContent, `id="`+subHeadings[i].ID+`"`) != 1 {
+				return nil, fmt.Errorf("TOC validation failed: ambiguous heading anchor %q in %s", oldID, file)
+			}
+		}
+		htmlContent = fmt.Sprintf(`<div id="%s"></div>`, gohtml.EscapeString(legacyID)) + htmlContent
 
 		// Merge H2 sections into previous
 		if level == 2 && len(sections) > 0 {
@@ -249,7 +270,9 @@ func ConvertToHTML(opts Options) ([]Section, error) {
 
 	// Load page numbers (for 2-Pass, Pass 2)
 	if opts.PagesJSON != "" {
-		applyPageNumbers(opts.PagesJSON, sections)
+		if err := applyPageNumbers(opts.PagesJSON, sections); err != nil {
+			return sections, err
+		}
 	}
 
 	// Generate HTML
@@ -281,7 +304,7 @@ func resolveValue(cliValue, configValue, fallback, defaultVal string) string {
 	return defaultVal
 }
 
-func applyPageNumbers(pagesJSONPath string, sections []Section) {
+func applyPageNumbers(pagesJSONPath string, sections []Section) error {
 	type PageInfo struct {
 		ID   string `json:"id"`
 		Page int    `json:"page"`
@@ -292,19 +315,34 @@ func applyPageNumbers(pagesJSONPath string, sections []Section) {
 
 	jsonData, err := os.ReadFile(pagesJSONPath)
 	if err != nil {
-		fmt.Printf("[WARN] Could not read pages JSON: %v\n", err)
-		return
+		return fmt.Errorf("TOC validation failed: could not read pages JSON: %w", err)
 	}
 
 	var pagesData PagesData
 	if err := json.Unmarshal(jsonData, &pagesData); err != nil {
-		fmt.Printf("[WARN] Could not parse pages JSON: %v\n", err)
-		return
+		return fmt.Errorf("TOC validation failed: could not parse pages JSON: %w", err)
 	}
 
 	pageMap := make(map[string]int)
 	for _, p := range pagesData.Sections {
+		if p.ID == "" || p.Page <= 0 || pageMap[p.ID] != 0 {
+			return fmt.Errorf("TOC validation failed: invalid or duplicate page mapping for %q", p.ID)
+		}
 		pageMap[p.ID] = p.Page
+	}
+	// Validate every expected ID before changing any section.
+	seen := make(map[string]bool)
+	for _, section := range sections {
+		ids := []string{section.ID}
+		for _, sub := range section.SubHeadings {
+			ids = append(ids, sub.ID)
+		}
+		for _, id := range ids {
+			if pageMap[id] <= 0 || seen[id] {
+				return fmt.Errorf("TOC validation failed: missing or duplicate section mapping for %q", id)
+			}
+			seen[id] = true
+		}
 	}
 	for i := range sections {
 		if page, ok := pageMap[sections[i].ID]; ok {
@@ -318,6 +356,7 @@ func applyPageNumbers(pagesJSONPath string, sections []Section) {
 			}
 		}
 	}
+	return nil
 }
 
 func parseSidebar(sidebarPath, baseDir string) ([]string, error) {
@@ -354,9 +393,9 @@ type markdownFile struct {
 func scanMarkdownFiles(dir string) ([]string, error) {
 	// Step 1: Collect root-level files and subdirectory groups separately
 	type dirGroup struct {
-		dirPos int    // from _category_.json "position"
+		dirPos  int // from _category_.json "position"
 		dirName string
-		files  []markdownFile
+		files   []markdownFile
 	}
 
 	var rootFiles []markdownFile
@@ -660,7 +699,7 @@ func generateID(filePath string) string {
 
 func extractSubHeadings(htmlContent string) []SubHeading {
 	var subHeadings []SubHeading
-	re := regexp.MustCompile(`<h2\s+id="([^"]+)"[^>]*>(.*?)</h2>`)
+	re := regexp.MustCompile(`(?s)<h2\s+id="([^"]+)"[^>]*>(.*?)</h2>`)
 	matches := re.FindAllStringSubmatch(htmlContent, -1)
 	stripTags := regexp.MustCompile(`<[^>]*>`)
 

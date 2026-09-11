@@ -5,10 +5,9 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
-	"regexp"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/ledongthuc/pdf"
 )
@@ -94,53 +93,26 @@ func AnalyzePDF(pdfPath, sectionsJSONPath string, skipPages int) (*Result, error
 		fmt.Fprintf(os.Stderr, "[INFO] Loaded %d entries to map\n", len(sections))
 	}
 
-	// Detect or use provided skip pages
-	var actualSkipPages int
-	if skipPages <= 0 {
-		fmt.Fprintf(os.Stderr, "[INFO] Auto-detecting TOC end page...\n")
-		detectedSkip := detectTocEndPage(sections, r)
-		if detectedSkip > 0 {
-			actualSkipPages = detectedSkip
-		} else {
-			actualSkipPages = 3
-			fmt.Fprintf(os.Stderr, "[INFO] Using default skip pages: %d\n", actualSkipPages)
-		}
-	} else {
-		actualSkipPages = skipPages
-		fmt.Fprintf(os.Stderr, "[INFO] Using manual skip pages: %d\n", actualSkipPages)
+	// Resolve the actual PDF destinations, never text from the TOC or body.
+	physicalPages, err := resolveDestinations(r, sections)
+	if err != nil {
+		return nil, err
 	}
-
-	// Search from body pages
-	startPage := actualSkipPages + 1
-	fmt.Fprintf(os.Stderr, "[INFO] Searching from page %d (skipping %d pages)\n", startPage, actualSkipPages)
-
-	lastFoundPage := startPage
+	actualSkipPages := skipPages
+	if actualSkipPages <= 0 && len(sections) > 0 {
+		actualSkipPages = physicalPages[sections[0].ID] - 1
+	}
+	if actualSkipPages < 0 {
+		actualSkipPages = 0
+	}
+	fmt.Fprintf(os.Stderr, "[INFO] Destination mapping: skipping %d front-matter pages\n", actualSkipPages)
 	for i := range sections {
-		found := false
-		for pageNum := lastFoundPage; pageNum <= totalPages; pageNum++ {
-			page := r.Page(pageNum)
-			if page.V.IsNull() {
-				continue
-			}
-
-			text, err := page.GetPlainText(nil)
-			if err != nil {
-				continue
-			}
-
-			if containsTitle(text, sections[i].Title) {
-				docPageNum := pageNum - actualSkipPages
-				sections[i].Page = docPageNum
-				lastFoundPage = pageNum // Move pointer to this page
-				found = true
-				fmt.Fprintf(os.Stderr, "[FOUND] '%s' on page %d (physical: %d)\n",
-					sections[i].Title, docPageNum, pageNum)
-				break
-			}
+		physical := physicalPages[sections[i].ID]
+		sections[i].Page = physical - actualSkipPages
+		if sections[i].Page <= 0 {
+			return nil, fmt.Errorf("TOC validation failed: section %q (%s) is on physical page %d, at or before -skip %d", sections[i].Title, sections[i].ID, physical, actualSkipPages)
 		}
-		if !found {
-			fmt.Fprintf(os.Stderr, "[WARN] Could not find section: '%s'\n", sections[i].Title)
-		}
+		fmt.Fprintf(os.Stderr, "[FOUND] %s '%s' on page %d (physical: %d)\n", sections[i].ID, sections[i].Title, sections[i].Page, physical)
 	}
 
 	result := &Result{
@@ -163,129 +135,121 @@ func SaveResult(result *Result, outputPath string) error {
 	return nil
 }
 
-func detectTocEndPage(sections []SectionPage, r *pdf.Reader) int {
-	if len(sections) == 0 {
-		return 0
+// resolveDestinations supports both catalog /Dests dictionaries (Chromium)
+// and /Names /Dests name trees. Unsupported or ambiguous targets fail closed.
+func resolveDestinations(r *pdf.Reader, sections []SectionPage) (map[string]int, error) {
+	wanted := make(map[string]bool, len(sections))
+	for _, section := range sections {
+		if section.ID == "" || wanted[section.ID] {
+			return nil, fmt.Errorf("TOC validation failed: empty or duplicate section ID %q", section.ID)
+		}
+		wanted[section.ID] = true
 	}
-
-	totalPages := r.NumPage()
-	firstSectionTitle := sections[0].Title
-
-	for pageNum := 2; pageNum <= totalPages; pageNum++ {
-		page := r.Page(pageNum)
-		if page.V.IsNull() {
-			continue
+	// This PDF reader resolves indirect references but does not expose their
+	// object numbers. Its canonical dictionary representation retains child
+	// references (Contents, Parent, etc.). Never guess if two pages are equal.
+	pageNumbers := make(map[string]int, r.NumPage())
+	for n := 1; n <= r.NumPage(); n++ {
+		v := r.Page(n).V
+		if v.IsNull() {
+			return nil, fmt.Errorf("TOC validation failed: missing physical page %d", n)
 		}
-
-		text, err := page.GetPlainText(nil)
-		if err != nil {
-			continue
+		key := v.String()
+		if _, exists := pageNumbers[key]; exists {
+			pageNumbers[key] = 0 // ambiguous; reject if used as a destination
+		} else {
+			pageNumbers[key] = n
 		}
-
-		if !containsTitle(text, firstSectionTitle) {
-			continue
-		}
-
-		if isBodyPage(text, sections) {
-			tocEndPage := pageNum - 1
-			fmt.Fprintf(os.Stderr, "[AUTO-DETECT] Content starts at page %d (first section: '%s')\n", pageNum, firstSectionTitle)
-			fmt.Fprintf(os.Stderr, "[AUTO-DETECT] TOC ends at page %d (pages to skip: %d)\n", tocEndPage, tocEndPage)
-			return tocEndPage
-		}
-
-		fmt.Fprintf(os.Stderr, "[AUTO-DETECT] Page %d appears to be TOC (contains '%s' but no body text)\n", pageNum, firstSectionTitle)
 	}
-
-	fmt.Fprintf(os.Stderr, "[WARN] Could not detect TOC end page (content start not found)\n")
-	return 0
+	pages := make(map[string]int, len(sections))
+	add := func(id string, destination pdf.Value) error {
+		if !wanted[id] {
+			// Chrome percent-encodes non-ASCII HTML fragment IDs.
+			decoded, err := url.PathUnescape(id)
+			if err != nil || !wanted[decoded] {
+				return nil
+			}
+			id = decoded
+		}
+		if _, exists := pages[id]; exists {
+			return fmt.Errorf("TOC validation failed: duplicate PDF destination %q", id)
+		}
+		if destination.Kind() == pdf.Dict {
+			destination = destination.Key("D")
+		}
+		if destination.Kind() != pdf.Array || destination.Index(0).Key("Type").Name() != "Page" {
+			return fmt.Errorf("TOC validation failed: unsupported PDF destination %q", id)
+		}
+		n := pageNumbers[destination.Index(0).String()]
+		if n <= 0 {
+			return fmt.Errorf("TOC validation failed: unknown or ambiguous page for destination %q", id)
+		}
+		pages[id] = n
+		return nil
+	}
+	root := r.Trailer().Key("Root")
+	legacy := root.Key("Dests")
+	for _, id := range legacy.Keys() {
+		if err := add(id, legacy.Key(id)); err != nil {
+			return nil, err
+		}
+	}
+	var walk func(pdf.Value, int) error
+	nodes := 0
+	walk = func(node pdf.Value, depth int) error {
+		if node.IsNull() {
+			return nil
+		}
+		nodes++
+		if depth > 64 || nodes > 100000 {
+			return fmt.Errorf("TOC validation failed: cyclic or oversized destination name tree")
+		}
+		names := node.Key("Names")
+		if names.Len()%2 != 0 {
+			return fmt.Errorf("TOC validation failed: malformed destination name tree")
+		}
+		for i := 0; i < names.Len(); i += 2 {
+			if err := add(names.Index(i).Text(), names.Index(i+1)); err != nil {
+				return err
+			}
+		}
+		kids := node.Key("Kids")
+		for i := 0; i < kids.Len(); i++ {
+			if err := walk(kids.Index(i), depth+1); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	if err := walk(root.Key("Names").Key("Dests"), 0); err != nil {
+		return nil, err
+	}
+	var missing []string
+	for _, section := range sections {
+		if pages[section.ID] == 0 {
+			missing = append(missing, fmt.Sprintf("%s (%q)", section.ID, section.Title))
+		}
+	}
+	if len(missing) > 0 {
+		return nil, fmt.Errorf("TOC validation failed: missing PDF destinations for %d section(s): %s", len(missing), strings.Join(missing, ", "))
+	}
+	return pages, nil
 }
 
-func isBodyPage(text string, sections []SectionPage) bool {
-	cleanText := strings.ReplaceAll(text, " ", "")
-	cleanText = strings.ReplaceAll(cleanText, "\n", "")
-	cleanText = strings.ReplaceAll(cleanText, "\t", "")
-	textLength := len(cleanText)
-
-	// TOC indicator: Even if "목차" is missing, many dots or ellipses are a strong TOC signal
-	dotLeaderPattern := regexp.MustCompile(`\.{2,}|·{2,}|…{1,}|·{2,}`)
-	dotMatches := dotLeaderPattern.FindAllString(text, -1)
-	dotCount := len(dotMatches)
-
-	// If a page has many dot leaders, it's definitely a TOC
-	if dotCount > 5 {
-		return false
+// ValidatePDF checks that Pass 2 retained the page mapping printed in its TOC.
+func ValidatePDF(pdfPath, sectionsJSONPath string, skipPages int, expected *Result) error {
+	actual, err := AnalyzePDF(pdfPath, sectionsJSONPath, skipPages)
+	if err != nil {
+		return err
 	}
-
-	if strings.Contains(text, "목차") || strings.Contains(text, "Table of Contents") {
-		if dotCount > 2 || textLength < 500 {
-			return false
+	if expected == nil || actual.TotalPages != expected.TotalPages || len(actual.Sections) != len(expected.Sections) {
+		return fmt.Errorf("TOC validation failed: pagination changed between PDF passes")
+	}
+	for i, section := range actual.Sections {
+		want := expected.Sections[i]
+		if section.ID != want.ID || section.Page != want.Page {
+			return fmt.Errorf("TOC validation failed: pagination changed for %s (%q): printed %d, actual %d", section.ID, section.Title, want.Page, section.Page)
 		}
 	}
-
-	if sections == nil {
-		// Simple check for body pages during main loop.
-		// Body pages usually have paragraphs, while TOC pages are sparse or list-like.
-		return textLength > 100 && dotCount <= 3
-	}
-
-	sectionCount := 0
-	for _, sec := range sections {
-		if containsTitle(text, sec.Title) {
-			sectionCount++
-		}
-	}
-
-	// If many titles from different sections appear, it's likely a TOC page
-	if sectionCount > 8 {
-		return false
-	}
-
-	if textLength < 150 {
-		return false
-	}
-
-	if sectionCount > 0 {
-		avgTextPerSection := textLength / sectionCount
-		if avgTextPerSection < 100 {
-			return false
-		}
-	}
-	return true
-}
-
-func containsTitle(text, title string) bool {
-	runeCount := utf8.RuneCountInString(title)
-	if runeCount < 1 {
-		return false
-	}
-	text = strings.TrimSpace(text)
-	title = strings.TrimSpace(title)
-
-	stripSpecial := func(s string) string {
-		// Keep only letters and numbers
-		reg := regexp.MustCompile(`[^a-zA-Z0-9가-힣]`)
-		return reg.ReplaceAllString(s, "")
-	}
-
-	// Remove all spaces and special characters for the most robust Korean matching in PDFs
-	cleanText := stripSpecial(text)
-	cleanTitle := stripSpecial(title)
-
-	// Remove leading numbers (1., 1.1, 1.1.1, etc)
-	reNum := regexp.MustCompile(`^[\d\.]+`)
-	noNumText := reNum.ReplaceAllString(cleanText, "")
-	noNumTitle := reNum.ReplaceAllString(cleanTitle, "")
-
-	if cleanTitle == "" || noNumTitle == "" {
-		return false
-	}
-
-	// Double check matching with both original (cleaned) and no-number versions
-	if strings.Contains(cleanText, cleanTitle) ||
-		strings.Contains(noNumText, noNumTitle) ||
-		strings.Contains(cleanText, noNumTitle) {
-		return true
-	}
-
-	return false
+	return nil
 }

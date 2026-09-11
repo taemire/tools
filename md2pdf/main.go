@@ -134,6 +134,8 @@ func main() {
 	pdfPass1 := filepath.Join(tmpDir, "pass1.pdf")
 	sectionsJSON := filepath.Join(tmpDir, "sections.json")
 	pagesJSON := filepath.Join(tmpDir, "pages.json")
+	htmlPass2 := filepath.Join(tmpDir, "pass2.html")
+	pdfPass2 := filepath.Join(tmpDir, "pass2.pdf")
 
 	// The final HTML will be saved alongside the PDF
 	finalHTML := strings.TrimSuffix(*outputFile, filepath.Ext(*outputFile)) + ".html"
@@ -195,7 +197,7 @@ func main() {
 	fmt.Println("[PASS 2] Regenerating HTML (with page numbers)...")
 
 	pass2Opts := baseOpts
-	pass2Opts.OutputFile = finalHTML
+	pass2Opts.OutputFile = htmlPass2
 	pass2Opts.SectionsJSON = "" // Don't regenerate sections
 	pass2Opts.PagesJSON = pagesJSON
 
@@ -206,10 +208,24 @@ func main() {
 	}
 
 	fmt.Println("[PASS 2] Converting to final PDF...")
-	err = renderer.RenderToPDF(finalHTML, *outputFile, renderer.Options{})
+	err = renderer.RenderToPDF(htmlPass2, pdfPass2, renderer.Options{})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Final PDF generation failed: %v\n", err)
 		os.Exit(1)
+	}
+
+	fmt.Println("[VALIDATION] Checking final PDF destinations against printed TOC pages...")
+	if err := analyzer.ValidatePDF(pdfPass2, sectionsJSON, *skipPages, result); err != nil {
+		fmt.Fprintf(os.Stderr, "[ERROR] Final TOC validation failed: %v\n", err)
+		os.Exit(1)
+	}
+	// Publish only after validation, preserving an existing output on mapping
+	// failure. Copy rather than rename: the output can be on another volume.
+	for _, file := range []struct{ source, target string }{{htmlPass2, finalHTML}, {pdfPass2, *outputFile}} {
+		if err := publishFile(file.source, file.target); err != nil {
+			fmt.Fprintf(os.Stderr, "[ERROR] Failed to publish output: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	// ======================================================================
@@ -220,4 +236,15 @@ func main() {
 	fmt.Printf("[SUCCESS] HTML generated: %s\n", finalHTML)
 	fmt.Printf("[SUCCESS] PDF generated: %s\n", *outputFile)
 	fmt.Println("==============================================================================")
+}
+
+func publishFile(source, target string) error {
+	data, err := os.ReadFile(source)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(target, data, 0644)
 }
