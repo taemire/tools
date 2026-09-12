@@ -1,7 +1,11 @@
+# 최상단 자율 완료 수칙
+
+진행상 기획/구현/빌드CI/실행 e2e검증을 완료한 상태의 형상은 에이전트가 사용자의 동의 없이 메인 머징/커밋/푸시를 할 수 있다. 단 최종 커밋전 Codex는 Claude에게, Claude는 Codex에게 최종 리뷰를 받고 100% 패스된 조건에서 수행한다.
+
 # Common Development Tools Project Rules
 
 > **운영 수칙 SSOT**: 이 파일(`CLAUDE.md`)이 `tools` 저장소의 프로젝트 운영 수칙이다.
-> 상위 workspace 수칙(`/Users/msjang/Documents/project/AGENTS.md`)과 공유 에이전트 수칙(`/Users/msjang/.agent/AGENTS.md`)을 함께 따른다.
+> 상위 workspace 수칙(`/Users/msjang/Documents/project/AGENTS.md`)과 공유 에이전트 수칙(`/Users/msjang/.agents/AGENTS.md`)을 함께 따른다.
 
 ## 프로젝트 정의
 
@@ -32,7 +36,7 @@
   - 예: `docs: 도구 저장소 수칙 추가`
 - 한 커밋에는 하나의 논리 단위만 담는다.
 - 커밋 전 `git status --short`, `git diff --stat`로 범위를 확인한다.
-- 사용자가 명시적으로 요청한 경우에만 push한다.
+- 사용자가 명시적으로 요청한 경우에만 push한다. 단 최상단 자율 완료 수칙의 completed-state + 최종 Codex↔Claude 100% PASS 조건이 충족된 경우에는 사용자 재승인 없이 main merge/commit/push까지 수행할 수 있다.
 
 ## 문서화 원칙
 
