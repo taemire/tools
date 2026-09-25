@@ -42,7 +42,10 @@ md2pdf -i <input_dir> -o <output.pdf> [-title "Title"] [-subtitle "Subtitle"] [-
 
 ```bash
 go build -o md2pdf .
+./scripts/check-binary-toc.sh
 ```
+
+`go test ./...`는 현재 소스를 검사하지만 저장된 `md2pdf` 실행 파일이 최신인지는 검사하지 않습니다. 소스를 바꾸거나 바이너리를 배포할 때는 다시 빌드한 뒤 위 스모크 테스트를 실행하세요. 이 테스트는 실제 바이너리로 PDF를 생성하고, 세 개 목차 항목에 양수 페이지 번호가 있으며 최종 PDF 목적지 검증 단계가 실행되는지 확인합니다.
 
 ## Notes
 
@@ -50,6 +53,7 @@ go build -o md2pdf .
 - `_sidebar.md` (if present) determines file order; otherwise files are sorted by filename.
 - `appendix/` subdirectories are also included.
 - Korean fonts are embedded — Korean documents render correctly.
+- 인쇄용 `report`·`modern`·`default` 템플릿은 제목(H1~H4)과 바로 다음 블록이 서로 다른 페이지로 분리되지 않도록 페이지 나눔 규칙을 적용합니다. Chrome 조판 결과는 실제 PDF를 렌더링해 확인하세요.
 
 ## TOC validation and CLI compatibility
 
