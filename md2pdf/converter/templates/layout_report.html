@@ -258,6 +258,7 @@
             font-family: 'JetBrains Mono', monospace;
             background: #f1f5f9;
             padding: 2px 6px;
+            white-space: nowrap;
             border-radius: 4px;
             font-size: 14px;
             color: #be185d;
@@ -279,6 +280,8 @@
             background: none;
             color: #e2e8f0;
             padding: 0;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
         }
 
         /* Tables */
@@ -637,6 +640,21 @@
         @media print {
             body {
                 background: white;
+            }
+
+            h1,
+            h2,
+            h3,
+            h4 {
+                page-break-after: avoid;
+                page-break-inside: avoid;
+            }
+
+            h1+*,
+            h2+*,
+            h3+*,
+            h4+* {
+                page-break-before: avoid;
             }
 
             .document-container {
