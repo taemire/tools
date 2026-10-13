@@ -1,0 +1,12 @@
+[Unit]
+Description=Allow ARTEX UID 2000 local report MCP and renderer CDP
+After=lab-firewall.service
+Requires=lab-firewall.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /opt/artex-lab/report-mcp/report-mcp-firewall.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

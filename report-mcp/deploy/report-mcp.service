@@ -1,0 +1,35 @@
+[Unit]
+Description=ARTEX report PDF MCP service (loopback only)
+After=network-online.target report-mcp-firewall.service
+Requires=report-mcp-firewall.service
+
+[Service]
+Type=simple
+User=artex-runtime
+Group=artex-runtime
+WorkingDirectory=/opt/artex-lab/report-mcp
+Environment=HOME=/opt/artex-lab/report-mcp/cache
+Environment=XDG_CACHE_HOME=/opt/artex-lab/report-mcp/cache
+Environment=REPORT_SESSION_ROOT=/opt/artex-lab/data/sessions
+Environment=REPORT_OUTPUT_ROOT=/opt/artex-lab/data/report-pdf
+Environment=REPORT_PUBLIC_ROOT=/app/data/report-pdf
+Environment=MD2PDF_BIN=/opt/artex-lab/report-mcp/bin/md2pdf
+Environment=REPORT_LISTEN=127.0.0.1:8891
+ExecStart=/opt/artex-lab/report-mcp/bin/report-mcp
+Restart=on-failure
+RestartSec=3
+UMask=0027
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadOnlyPaths=/opt/artex-lab/data/sessions
+ReadWritePaths=/opt/artex-lab/data/report-pdf /opt/artex-lab/report-mcp/cache
+IPAddressDeny=any
+IPAddressAllow=localhost
+MemoryMax=1536M
+CPUQuota=150%
+TasksMax=256
+
+[Install]
+WantedBy=multi-user.target
