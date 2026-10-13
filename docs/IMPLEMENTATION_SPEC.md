@@ -34,7 +34,7 @@
 - **revlog.bat**: Git 히스토리 및 태그 조회
 
 ### 1.3 기술 스택
-- **언어**: Go 1.21+, Windows Batch Script
+- **언어**: Go 1.27.1+, Windows Batch Script
 - **주요 라이브러리**:
   - `goldmark`: Markdown 파싱 (GFM, Table 확장 지원)
   - `chromedp`: Chrome DevTools Protocol 기반 PDF 렌더링
