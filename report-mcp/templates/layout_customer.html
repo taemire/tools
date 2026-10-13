@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>{{.Title | html}}</title>
+<style>
+@font-face{font-family:ReportKorean;src:url('file:///usr/share/fonts/truetype/nanum/NanumGothic.ttf')}
+@font-face{font-family:ReportKorean;src:url('file:///usr/share/fonts/truetype/nanum/NanumGothicBold.ttf');font-weight:700}
+@page{size:A4;margin:18mm 16mm 20mm;@bottom-left{content:"검토본 | 고객 제출 전 검증과 내용 확인 필요";font:8pt ReportKorean,sans-serif;color:#5b697a}@bottom-right{content:counter(page);font:8pt ReportKorean,sans-serif;color:#5b697a}}
+*{box-sizing:border-box}body{margin:0;color:#182333;font:10pt/1.65 ReportKorean,sans-serif;overflow-wrap:anywhere}
+h1,h2,h3,h4{color:#143659;line-height:1.35;break-after:avoid;page-break-after:avoid;margin:1.5em 0 .6em}
+h1{font-size:21pt}h2{font-size:15pt;border-bottom:1px solid #c9d4e1;padding-bottom:5pt}h3{font-size:12pt}h4{font-size:10.5pt}
+h1+*,h2+*,h3+*,h4+*{break-before:avoid}h3+p,h3+p+p{break-after:avoid;page-break-after:avoid}p,li{orphans:3;widows:3;break-inside:avoid;page-break-inside:avoid}p{margin:.5em 0 .9em}
+a{color:#143659;text-decoration:none;overflow-wrap:anywhere}strong{font-weight:700}
+.cover{break-after:page;padding-top:25mm}.badge{font-size:10pt;letter-spacing:1pt;color:#4c6178}.cover h1{font-size:29pt;margin:14mm 0 8mm}.subtitle{font-size:13pt}.meta{margin-top:24mm;border-top:1px solid #c9d4e1;padding-top:6mm;color:#526275}
+.toc{break-after:page}.toc ul{list-style:none;padding:0}.toc li{display:flex;gap:8pt;align-items:baseline;margin:5pt 0}.toc li a{flex:1}.toc-page{min-width:4em;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.toc-sub{padding-left:12pt;font-size:9pt}
+table{width:100%;table-layout:fixed;border-collapse:collapse;margin:12pt 0;font-size:9pt}thead{display:table-header-group}th,td{border:1px solid #c9d4e1;padding:6pt;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}th{background:#edf2f7;color:#143659;text-align:left}tr{break-inside:avoid;page-break-inside:avoid}td p{margin:0}table:has(th:nth-child(3):last-child) th:first-child{width:60%}table:has(th:nth-child(3):last-child) th:nth-child(2),table:has(th:nth-child(3):last-child) th:nth-child(3){width:20%}
+code{font:8.8pt/1.5 ReportKorean,monospace;white-space:normal;overflow-wrap:anywhere;word-break:break-all;background:#eef2f5;padding:1pt 2pt}
+pre{font:8.5pt/1.5 ReportKorean,monospace;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-all;max-width:100%;background:#f1f4f7;border:1px solid #dbe2ea;padding:9pt;margin:10pt 0;break-inside:auto}pre code{white-space:pre-wrap;background:none;padding:0;font-size:8.5pt;overflow-wrap:anywhere;word-break:break-all}
+blockquote{margin:10pt 0;border-left:3pt solid #8aa5c1;padding:2pt 10pt;color:#435368}img{max-width:100%;height:auto}p:has(>img){break-inside:avoid;page-break-inside:avoid}ul,ol{padding-left:18pt}.section{margin:0}.footer{margin-top:16pt;border-top:1px solid #c9d4e1;padding-top:5pt;color:#5b697a;font-size:8pt}
+@media print{.footer{display:none}}
+</style></head><body>
+<div class="document-container">
+<section class="cover"><div class="badge">{{if .Header}}{{.Header | html}}{{else}}고객 보고서{{end}}</div><h1>{{.Title | html}}</h1>{{if .Subtitle}}<p class="subtitle">{{.Subtitle | html}}</p>{{end}}<div class="meta"><p>작성일: {{.Date | html}}</p>{{if .Author}}<p>작성: {{.Author | html}}</p>{{end}}<p>배포 등급: CONFIDENTIAL</p></div></section>
+<nav class="toc"><h2>목차</h2><ul>{{range $s := .Sections}}<li><a href="#{{$s.ID}}">{{$s.Title | html}}</a><span class="toc-page">{{if gt $s.PageNumber 0}}{{$s.PageNumber}}{{else}}&#160;{{end}}</span></li>{{range $sub := $s.SubHeadings}}<li class="toc-sub"><a href="#{{$sub.ID}}">{{$sub.Title | html}}</a><span class="toc-page">{{if gt $sub.PageNumber 0}}{{$sub.PageNumber}}{{else}}&#160;{{end}}</span></li>{{end}}{{end}}</ul></nav>
+<main>{{range $s := .Sections}}<section class="section" id="{{$s.ID}}">{{$s.Content}}</section>{{end}}</main>
+<footer class="footer">{{if .Footer}}{{.Footer | html}}{{else}}고객 제출 전 내용과 전 페이지의 시각 검토가 필요합니다.{{end}}</footer>
+</div></body></html>

@@ -1,0 +1,40 @@
+--- a/main.go
++++ b/main.go
+@@ -62,6 +62,7 @@
+ 	}
+ 
+ 	flag.Parse()
++	analyzer.UsePhysicalPages = *templateName == "customer"
+ 
+ 	if *showVersion {
+ 		fmt.Printf("md2pdf v%s (%s)\n", BuildVersion, BuildTime)
+--- a/analyzer/analyzer.go
++++ b/analyzer/analyzer.go
+@@ -46,6 +46,8 @@
+ // AnalyzePDF analyzes a PDF to find which page each section starts on.
+ // sectionsJSONPath is the path to sections JSON from converter.
+ // skipPages: 0 or negative for auto-detect, positive for manual.
++var UsePhysicalPages bool
++
+ func AnalyzePDF(pdfPath, sectionsJSONPath string, skipPages int) (*Result, error) {
+ 	// Open PDF
+ 	f, r, err := pdf.Open(pdfPath)
+@@ -99,7 +101,7 @@
+ 		return nil, err
+ 	}
+ 	actualSkipPages := skipPages
+-	if actualSkipPages <= 0 && len(sections) > 0 {
++	if !UsePhysicalPages && actualSkipPages <= 0 && len(sections) > 0 {
+ 		actualSkipPages = physicalPages[sections[0].ID] - 1
+ 	}
+ 	if actualSkipPages < 0 {
+--- a/renderer/renderer.go
++++ b/renderer/renderer.go
+@@ -62,6 +62,7 @@
+ 		append(
+ 			chromedp.DefaultExecAllocatorOptions[:],
+ 			chromedp.Flag("disable-gpu", true),
++			chromedp.Flag("remote-debugging-port", "9223"),
+ 			chromedp.Flag("no-sandbox", true),
+ 			chromedp.Flag("disable-dev-shm-usage", true),
+ 			chromedp.Flag("disable-extensions", true),
