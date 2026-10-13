@@ -16,6 +16,10 @@
   ```
 - **위치**: `md2pdf/` (Go 소스)
 
+### [report-mcp](report-mcp/README.md)
+
+ARTEX Ubuntu에서 기존 Markdown과 작업 자료를 고객 검토용 PDF·HTML로 변환하는 MCP 서비스입니다. 기존 `md2pdf`를 별도 빌드로 재사용하며, 고객 지면·대표 관계 그래프·페이지 검사·기존 보고서 탭의 다운로드를 연결합니다.
+
 ## 🛠️ 개발 유틸리티 (Utilities)
 
 ### 2. [revlog](revlog.bat)
