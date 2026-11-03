@@ -219,7 +219,15 @@ func stageMarkdown(root *os.Root, rel string, dst string) ([]byte, error) {
 	return b, nil
 }
 func run(ctx context.Context, name string, args ...string) (string, error) {
+	return runEnv(ctx, nil, name, args...)
+}
+
+// runEnv runs a program with extra environment entries added to the service's.
+func runEnv(ctx context.Context, extra []string, name string, args ...string) (string, error) {
 	c := exec.CommandContext(ctx, name, args...)
+	if len(extra) > 0 {
+		c.Env = append(os.Environ(), extra...)
+	}
 	c.WaitDelay = 3 * time.Second
 	b, err := c.CombinedOutput()
 	if err != nil {
@@ -468,7 +476,7 @@ func (a *app) render(ctx context.Context, in renderInput) (receipt, error) {
 	if in.Author != "" {
 		args = append(args, "-author", in.Author)
 	}
-	logs, err := run(ctx, a.cfg.converter, args...)
+	logs, err := runEnv(ctx, converterEnv(), a.cfg.converter, args...)
 	os.WriteFile(filepath.Join(dir, "render.log"), []byte(logs), 0640)
 	if err != nil || !strings.Contains(logs, "[VALIDATION] Checking final PDF destinations") {
 		r.Status = "FAILED"
@@ -574,4 +582,13 @@ func main() {
 	})
 	log.Printf("report-pdf %s listening on %s", version, listen)
 	log.Fatal((&http.Server{Addr: listen, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 240 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 32 << 10}).ListenAndServe())
+}
+
+// converterEnv tells md2pdf how to reach Chrome: reuse the resident Chrome at
+// REPORT_CHROME_URL when it answers, otherwise start one on the firewall-allowed
+// port 9223 bound to 127.0.0.1 after checking the port is free. md2pdf pins the
+// WebSocket address to that IPv4 endpoint, so a Chrome that falls back to
+// [::1] is never dialled (production failure of 2026-11-02).
+func converterEnv() []string {
+	return []string{"MD2PDF_CHROME_URL=" + env("REPORT_CHROME_URL", "http://127.0.0.1:9223"), "MD2PDF_DEVTOOLS_PORT=" + env("REPORT_MD2PDF_DEVTOOLS_PORT", "9223")}
 }

@@ -28,13 +28,3 @@
  		actualSkipPages = physicalPages[sections[0].ID] - 1
  	}
  	if actualSkipPages < 0 {
---- a/renderer/renderer.go
-+++ b/renderer/renderer.go
-@@ -62,6 +62,7 @@
- 		append(
- 			chromedp.DefaultExecAllocatorOptions[:],
- 			chromedp.Flag("disable-gpu", true),
-+			chromedp.Flag("remote-debugging-port", "9223"),
- 			chromedp.Flag("no-sandbox", true),
- 			chromedp.Flag("disable-dev-shm-usage", true),
- 			chromedp.Flag("disable-extensions", true),
