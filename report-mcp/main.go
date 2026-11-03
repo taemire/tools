@@ -29,9 +29,10 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
+	"report-mcp/artexmd"
 )
 
-const version = "0.1.0"
+const version = "0.2.1"
 
 var sessionPattern = regexp.MustCompile(`^(conv|task)-[0-9]+$`)
 var jobPattern = regexp.MustCompile(`^job-[a-f0-9]{32}$`)
@@ -42,17 +43,23 @@ type app struct {
 	cfg              config
 	sessions, output *os.Root
 	busy             chan struct{}
+	parseV3          func([]byte) (*artexmd.Document, error)
+	nowV3            func() time.Time
 }
 type renderInput struct {
-	SessionID    string       `json:"session_id" jsonschema:"ARTEX session folder, for example conv-39"`
-	MarkdownFile string       `json:"markdown_file" jsonschema:"Markdown path relative to this session folder"`
-	Title        string       `json:"title" jsonschema:"Customer report title"`
-	Author       string       `json:"author,omitempty" jsonschema:"Report author or company"`
-	Graph        *reportGraph `json:"graph,omitempty" jsonschema:"Existing task relationships for a static customer diagram; no new discovery"`
+	SessionID    string                `json:"session_id" jsonschema:"ARTEX session folder, for example conv-39"`
+	MarkdownFile string                `json:"markdown_file" jsonschema:"Markdown path relative to this session folder"`
+	Title        string                `json:"title" jsonschema:"Customer report title"`
+	Author       string                `json:"author,omitempty" jsonschema:"Report author or company"`
+	Graph        *reportGraph          `json:"graph,omitempty" jsonschema:"Existing task relationships for a static customer diagram; no new discovery"`
+	SourceFormat string                `json:"source_format,omitempty"`
+	Formats      []string              `json:"formats,omitempty"`
+	RenderInputs *artexmd.RenderInputs `json:"render_inputs,omitempty"`
 }
 type resultInput struct {
-	SessionID string `json:"session_id"`
-	JobID     string `json:"job_id"`
+	SessionID        string `json:"session_id"`
+	JobID            string `json:"job_id"`
+	CapabilitiesOnly bool   `json:"capabilities_only,omitempty"`
 }
 type receipt struct {
 	SessionID       string            `json:"session_id"`
@@ -67,6 +74,8 @@ type receipt struct {
 	Checks          map[string]string `json:"checks"`
 	CustomerRelease string            `json:"customer_release"`
 	CreatedAt       string            `json:"created_at"`
+	V3              *v3Receipt        `json:"v3,omitempty"`
+	Capabilities    []string          `json:"capabilities,omitempty"`
 }
 
 func env(key, fallback string) string {
@@ -387,6 +396,12 @@ func (a *app) inspect(ctx context.Context, r *receipt) error {
 	return nil
 }
 func (a *app) render(ctx context.Context, in renderInput) (receipt, error) {
+	if in.SourceFormat != "" {
+		if in.SourceFormat != "artex-md-3" {
+			return receipt{}, errors.New("SOURCE_FORMAT_UNSUPPORTED")
+		}
+		return a.renderV3(ctx, in, "")
+	}
 	var r receipt
 	if !sessionPattern.MatchString(in.SessionID) {
 		return r, errors.New("session_id must match conv-N or task-N")
@@ -480,6 +495,10 @@ func (a *app) render(ctx context.Context, in renderInput) (receipt, error) {
 }
 func (a *app) server() *mcp.Server {
 	s := mcp.NewServer(&mcp.Implementation{Name: "report-pdf", Version: version}, nil)
+	mcp.AddTool(s, &mcp.Tool{Name: "render_report_figures", Description: "Rasterize an ARTEX artex-layout-r3b-v1 SVG bundle using the pinned B1 renderer. No scanning or customer approval."}, func(ctx context.Context, _ *mcp.CallToolRequest, in reportFiguresInput) (*mcp.CallToolResult, reportFiguresResult, error) {
+		r, e := a.renderReportFigures(ctx, in)
+		return nil, r, e
+	})
 	mcp.AddTool(s, &mcp.Tool{Name: "render_report", Description: "Generate a customer PDF/HTML and all-page previews from existing session Markdown. Does not scan sites or certify report claims."}, func(ctx context.Context, _ *mcp.CallToolRequest, in renderInput) (*mcp.CallToolResult, receipt, error) {
 		r, e := a.render(ctx, in)
 		return nil, r, e
@@ -508,12 +527,29 @@ func (a *app) server() *mcp.Server {
 		return nil, r, e
 	})
 	mcp.AddTool(s, &mcp.Tool{Name: "get_report_result", Description: "Get generated file paths, hashes and machine checks. Content/visual customer review remains separate."}, func(_ context.Context, _ *mcp.CallToolRequest, in resultInput) (*mcp.CallToolResult, receipt, error) {
+		if in.CapabilitiesOnly {
+			return nil, receipt{Status: "CAPABILITIES", Checks: map[string]string{}, PreviewPaths: []string{}, Capabilities: []string{"artex-md-3", "docx", "render_report_figures"}}, nil
+		}
 		r, e := a.load(in)
 		return nil, r, e
 	})
 	return s
 }
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "render-v3" {
+		if e := renderV3CLI(os.Args[2:]); e != nil {
+			log.Print(e)
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "render-figures" {
+		if err := figuresCLI(os.Args[2:]); err != nil {
+			log.Print(err)
+			os.Exit(1)
+		}
+		return
+	}
 	listen := env("REPORT_LISTEN", "127.0.0.1:8891")
 	host, _, err := net.SplitHostPort(listen)
 	if err != nil || net.ParseIP(host) == nil || !net.ParseIP(host).IsLoopback() {

@@ -110,11 +110,11 @@ func TestReceiptAtomicReadAndPathGuard(t *testing.T) {
 	if e = a.save(r); e != nil {
 		t.Fatal(e)
 	}
-	got, e := a.load(resultInput{r.SessionID, r.JobID})
+	got, e := a.load(resultInput{SessionID: r.SessionID, JobID: r.JobID})
 	if e != nil || got.Status != "HOLD" {
 		t.Fatalf("receipt: %v", e)
 	}
-	if _, e = a.load(resultInput{"conv-1", "../../secret"}); e == nil {
+	if _, e = a.load(resultInput{SessionID: "conv-1", JobID: "../../secret"}); e == nil {
 		t.Fatal("job traversal accepted")
 	}
 }
