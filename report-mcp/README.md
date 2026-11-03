@@ -32,7 +32,7 @@
 ### 검사와 영수증
 
 - 거부: `SCHEMA_INVALID`, `SOURCE_FORMAT_VERSION_UNSUPPORTED`, `SOURCE_NOT_RESOLVED`(계산값 누락), `SOURCE_INCONSISTENT`(같은 값의 두 사본이 다름), `WATERMARK_*`, `TEMPLATE_*_MISMATCH`.
-- 출력 검사: `RENDERED_ACTIVE_CONTENT`, `SENSITIVE_VALUE_IN_OUTPUT`(HTML 보이는 텍스트·주석·속성·원문, PDF 텍스트·문서 정보, 워터마크 문구; 값 대신 번호만 보고), `PDF_FONT_UNEXPECTED`(Pretendard·D2Coding·Noto Sans JP/SC 외), `PDF_FONT_TYPE3`, `WATERMARK_TEXT_IN_PDF`, 쪽 수, 기존 `qpdf --check`·텍스트 경계·쪽 미리보기.
+- 출력 검사: `RENDERED_ACTIVE_CONTENT`, `SENSITIVE_VALUE_IN_OUTPUT`(HTML 보이는 텍스트·주석·속성·원문, PDF 텍스트·문서 정보, 워터마크 문구; 값 대신 번호만 보고), `PDF_FONT_UNEXPECTED`(DejaVu Sans·Noto Sans CJK SC·Noto Sans Mono CJK SC·Noto Sans JP/SC 외), `PDF_FONT_TYPE3`, `WATERMARK_TEXT_IN_PDF`, 쪽 수, 기존 `qpdf --check`·텍스트 경계·쪽 미리보기.
 - 실패한 job은 `report.html`·`report.pdf`를 지우고 `FAILED` 영수증만 남깁니다.
 - 영수증 `arx_pentest_report`에 형식·언어, 렌더러·템플릿 판, Chrome 판, 입력 해시(`source_sha256`, 민감값을 뺀 `render_inputs_sha256`), 템플릿·CSS·토큰·사전·스키마 해시, 글꼴 파일 해시, 적용 워터마크 설정과 윤곽 해시, 양식, 이름 해시, 민감값 개수, 출력 해시, PDF 쪽 수·글꼴을 남깁니다. 입력 해시는 키를 정렬하고 HTML 이스케이프를 하지 않은 JSON(UTF-8, 끝 개행 없음) 기준입니다.
 - 영수증·오류 응답·명령 출력에는 요청의 자유 문자열을 원문으로 넣지 않습니다. 이름·워터마크 문구·PDF 문서 정보는 SHA-256과 길이, 출처 표시·`field_sources`는 허용 값만, `rejected_overrides`는 개수만 남깁니다. 오류 메시지는 코드·고정 경로·숫자만 담고, 요청 문자열이나 등록 민감값이 섞이면 상세를 뺍니다. 저장 직전에 영수증 전체를 등록 민감값으로 다시 검사합니다(`RECEIPT_SENSITIVE_VALUE`).
@@ -211,3 +211,5 @@ v3 DOCX는 모든 참조 paragraph/character/table 스타일을 정의하고 Hea
 ### policy3 상세 부록(로컬·미배포)
 
 ARTEX의 `appendix.customer_facts` 슬롯은 독립 쪽에서 시작합니다. 해당 슬롯의 2열 표만 번호 680/내용 8391 dxa(HTML 8/92%)로 렌더하며, 기존 슬롯·일반 표의 배치는 유지합니다. 새 슬롯을 포함한 의미 투영은 ARTEX가 발급 전에 독립 계산합니다. 후보 제출은 원본 상세를 바꾸지 않으며, 렌더 성공을 고객 내용 승인으로 해석하지 않습니다.
+
+새 형식의 기본 글꼴·표 치수는 사용자 원본 12쪽 기준입니다. DejaVu Sans와 정적 TrueType Noto CJK SC를 함께 사용하며 Type 3는 거부합니다. 승인 기록이 없어도 작성·검토·승인 행과 빈 서명 칸을 유지합니다. 글꼴 출처·라이선스·원본 내용 재현 시험은 [렌더러 안내](pentestreport/README.md)를 따릅니다.
