@@ -22,7 +22,10 @@ var (
 	BuildTime    = ""
 )
 
-func main() {
+func main() { os.Exit(run()) }
+
+// run returns before os.Exit so deferred job cleanup also runs on failures.
+func run() int {
 	// CLI flags (Same as md2pdf_v2.sh)
 	inputDir := flag.String("i", "", "Input directory containing markdown files (required)")
 	outputFile := flag.String("o", "", "Output PDF file path (required)")
@@ -65,12 +68,12 @@ func main() {
 
 	if *showVersion {
 		fmt.Printf("md2pdf v%s (%s)\n", BuildVersion, BuildTime)
-		return
+		return 0
 	}
 
 	if *inputDir == "" || *outputFile == "" {
 		flag.Usage()
-		os.Exit(1)
+		return 1
 	}
 
 	// === HTML-only mode ===
@@ -102,14 +105,14 @@ func main() {
 		_, err := converter.ConvertToHTML(opts)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "[ERROR] HTML generation failed: %v\n", err)
-			os.Exit(1)
+			return 1
 		}
 
 		fmt.Println()
 		fmt.Println("==============================================================================")
 		fmt.Printf("[SUCCESS] HTML generated: %s\n", *outputFile)
 		fmt.Println("==============================================================================")
-		return
+		return 0
 	}
 
 	// === PDF mode (default) ===
@@ -122,11 +125,13 @@ func main() {
 	fmt.Println("==============================================================================")
 	fmt.Println()
 
-	// Create temp directory for intermediate files
-	tmpDir, err := os.MkdirTemp("", "md2pdf-*")
+	// Chrome can live outside this process's PrivateTmp mount namespace.
+	// Keep intermediate HTML/PDF next to the final output, not in os.TempDir.
+	// MkdirTemp gives each render a private 0700 directory owned by this UID.
+	tmpDir, err := createPDFWorkspace(*outputFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Failed to create temp directory: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 	defer os.RemoveAll(tmpDir)
 
@@ -164,14 +169,14 @@ func main() {
 	_, err = converter.ConvertToHTML(baseOpts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Pass 1 HTML generation failed: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 
 	fmt.Println("[PASS 1] Converting HTML to PDF...")
 	err = renderer.RenderToPDF(htmlPass1, pdfPass1, renderer.Options{})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Pass 1 PDF generation failed: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 
 	// ======================================================================
@@ -182,13 +187,13 @@ func main() {
 	result, err := analyzer.AnalyzePDF(pdfPass1, sectionsJSON, *skipPages)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] PDF analysis failed: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 
 	err = analyzer.SaveResult(result, pagesJSON)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Failed to save analysis result: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 
 	// ======================================================================
@@ -204,27 +209,27 @@ func main() {
 	_, err = converter.ConvertToHTML(pass2Opts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Pass 2 HTML generation failed: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 
 	fmt.Println("[PASS 2] Converting to final PDF...")
 	err = renderer.RenderToPDF(htmlPass2, pdfPass2, renderer.Options{})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Final PDF generation failed: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 
 	fmt.Println("[VALIDATION] Checking final PDF destinations against printed TOC pages...")
 	if err := analyzer.ValidatePDF(pdfPass2, sectionsJSON, *skipPages, result); err != nil {
 		fmt.Fprintf(os.Stderr, "[ERROR] Final TOC validation failed: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 	// Publish only after validation, preserving an existing output on mapping
 	// failure. Copy rather than rename: the output can be on another volume.
 	for _, file := range []struct{ source, target string }{{htmlPass2, finalHTML}, {pdfPass2, *outputFile}} {
 		if err := publishFile(file.source, file.target); err != nil {
 			fmt.Fprintf(os.Stderr, "[ERROR] Failed to publish output: %v\n", err)
-			os.Exit(1)
+			return 1
 		}
 	}
 
@@ -236,6 +241,7 @@ func main() {
 	fmt.Printf("[SUCCESS] HTML generated: %s\n", finalHTML)
 	fmt.Printf("[SUCCESS] PDF generated: %s\n", *outputFile)
 	fmt.Println("==============================================================================")
+	return 0
 }
 
 func publishFile(source, target string) error {
@@ -247,4 +253,14 @@ func publishFile(source, target string) error {
 		return err
 	}
 	return os.WriteFile(target, data, 0644)
+}
+
+// createPDFWorkspace keeps all Chrome-readable intermediates in the output
+// filesystem. Each directory is unique and owner-only even when jobs overlap.
+func createPDFWorkspace(output string) (string, error) {
+	parent := filepath.Dir(output)
+	if err := os.MkdirAll(parent, 0755); err != nil {
+		return "", err
+	}
+	return os.MkdirTemp(parent, ".md2pdf-*")
 }

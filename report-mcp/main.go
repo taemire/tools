@@ -493,6 +493,14 @@ func (a *app) render(ctx context.Context, in renderInput) (receipt, error) {
 		args = append(args, "-author", in.Author)
 	}
 	logs, err := runEnv(ctx, converterEnv(), a.cfg.converter, args...)
+	// CommandContext may SIGKILL the converter on the MCP deadline, bypassing
+	// its defer. Wait has returned; remove only this job's owned intermediates.
+	if cleanupErr := cleanupConverterWorkspaces(dir); cleanupErr != nil {
+		logs += "\n[ERROR] CONVERTER_WORKSPACE_CLEANUP_FAILED\n"
+		if err == nil {
+			err = errors.New("CONVERTER_WORKSPACE_CLEANUP_FAILED")
+		}
+	}
 	os.WriteFile(filepath.Join(dir, "render.log"), []byte(logs), 0640)
 	if err != nil || !strings.Contains(logs, "[VALIDATION] Checking final PDF destinations") {
 		r.Status = "FAILED"
@@ -621,4 +629,21 @@ func main() {
 // [::1] is never dialled (production failure of 2026-11-02).
 func converterEnv() []string {
 	return []string{"MD2PDF_CHROME_URL=" + env("REPORT_CHROME_URL", "http://127.0.0.1:9223"), "MD2PDF_DEVTOOLS_PORT=" + env("REPORT_MD2PDF_DEVTOOLS_PORT", "9223")}
+}
+
+// cleanupConverterWorkspaces is called only after the child process exits.
+// ReadDir avoids interpreting output-root characters as a glob pattern.
+func cleanupConverterWorkspaces(jobDir string) error {
+	entries, err := os.ReadDir(jobDir)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), ".md2pdf-") {
+			if err := os.RemoveAll(filepath.Join(jobDir, entry.Name())); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
