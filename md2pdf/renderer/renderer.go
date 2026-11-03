@@ -20,6 +20,10 @@ type Options struct {
 	Landscape bool
 	Scale     float64
 	Timeout   int // seconds
+	// ChromeURL reuses a running Chrome (MD2PDF_CHROME_URL when empty).
+	ChromeURL string
+	// DevToolsPort starts Chrome on this 127.0.0.1 port (MD2PDF_DEVTOOLS_PORT when 0).
+	DevToolsPort int
 }
 
 // RenderToPDF converts an HTML file to a PDF file using Chrome/Chromium.
@@ -57,8 +61,7 @@ func RenderToPDF(inputHTML, outputPDF string, opts Options) error {
 	fmt.Printf("[INFO] Output: %s\n", outputPDF)
 
 	// Create Chrome context
-	allocCtx, allocCancel := chromedp.NewExecAllocator(
-		context.Background(),
+	allocCtx, allocCancel, diagnose, remote, err := browserAllocator(context.Background(), opts,
 		append(
 			chromedp.DefaultExecAllocatorOptions[:],
 			chromedp.Flag("disable-gpu", true),
@@ -66,11 +69,16 @@ func RenderToPDF(inputHTML, outputPDF string, opts Options) error {
 			chromedp.Flag("disable-dev-shm-usage", true),
 			chromedp.Flag("disable-extensions", true),
 			chromedp.Flag("disable-background-networking", true),
-		)...,
-	)
+		))
+	if err != nil {
+		return err
+	}
 	defer allocCancel()
 
-	ctx, cancel := chromedp.NewContext(allocCtx, chromedp.WithLogf(log.Printf))
+	ctx, cancel, err := isolatedContext(allocCtx, remote, chromedp.WithLogf(log.Printf))
+	if err != nil {
+		return fmt.Errorf("failed to start browser: %w", diagnose(err))
+	}
 	defer cancel()
 
 	// Set timeout
@@ -83,7 +91,7 @@ func RenderToPDF(inputHTML, outputPDF string, opts Options) error {
 		chromedp.WaitReady("body"),
 		chromedp.Sleep(3*time.Second),
 	); err != nil {
-		return fmt.Errorf("failed to load page: %w", err)
+		return fmt.Errorf("failed to load page: %w", diagnose(err))
 	}
 
 	// Wait for Mermaid rendering
@@ -134,7 +142,7 @@ func RenderToPDF(inputHTML, outputPDF string, opts Options) error {
 			return err
 		}),
 	); err != nil {
-		return fmt.Errorf("failed to generate PDF: %w", err)
+		return fmt.Errorf("failed to generate PDF: %w", diagnose(err))
 	}
 
 	// Ensure output directory exists

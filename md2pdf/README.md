@@ -67,6 +67,19 @@ TOC number space is reserved in both passes, including for long titles. The `rep
 
 See [the original research and implementation update](docs/toc-mapping-research.md) and [the fix validation report](docs/toc-mapping-fix-validation.md).
 
+## Browser connection
+
+md2pdf starts its own headless Chrome on a random DevTools port by default. Two environment variables change that:
+
+| Variable | Effect |
+|---|---|
+| `MD2PDF_CHROME_URL` | Reuse a running Chrome, for example `http://127.0.0.1:9223`. Only a numeric loopback address is accepted. md2pdf reads `/json/version` and pins the advertised WebSocket URL to this host and port, so a Chrome that advertises `ws://[::1]:…` or `ws://localhost:…` is still reached over the configured address. If the endpoint does not answer and `MD2PDF_DEVTOOLS_PORT` is set, md2pdf starts its own Chrome instead. |
+| `MD2PDF_DEVTOOLS_PORT` | Start the own Chrome on this fixed port bound to `127.0.0.1` (for hosts whose firewall allows only that port). md2pdf first checks that `127.0.0.1:<port>` is free and fails with `DEVTOOLS_PORT_BUSY` otherwise. When the port is taken, Chrome 156 falls back to `[::1]:<port>` even with `--remote-debugging-address=127.0.0.1`; a connection failure after such an advertisement is reported as `DEVTOOLS_ADDRESS_FAMILY_MISMATCH`. |
+
+A reused Chrome is reached over an unauthenticated loopback DevTools port. Each render runs in a new browser context created with `disposeOnDetach`, so cookies, storage and cache are not shared with other users of that Chrome and are discarded afterwards. Use `MD2PDF_CHROME_URL` only on a single-tenant host where that port belongs to a Chrome dedicated to the report service (the ARTEX host restricts it per UID with iptables); do not use it on shared multi-user hosts.
+
+`renderer/devtools_test.go` covers the address pinning, the busy-port refusal and, with a local Chrome, reuse of a resident Chrome on the same port (`MD2PDF_TEST_CHROME` selects the executable).
+
 ## Tests
 
 ```bash
