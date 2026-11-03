@@ -94,3 +94,9 @@ The full test suite includes actual Chrome/Chromium PDF rendering and CLI failur
 ## License
 
 Internal tool — please refer to repository policy.
+
+## 상주 Chrome과 중간 파일
+
+PDF의 두 번 인쇄에 쓰는 파일은 최종 `-o` 경로의 부모 아래 `.md2pdf-*`(0700)에 만듭니다. 공유 Chrome이 읽어야 하므로 `-o`의 부모는 호출 프로세스와 Chrome 양쪽에서 같은 경로로 보이는 위치여야 합니다. `PrivateTmp`로 분리된 `/tmp`에 출력하지 않습니다. 같은 UID의 Chrome을 사용하며 중간 폴더 권한을 넓히지 않습니다. 이미지 내장과 각 템플릿의 기존 글꼴 참조 규칙은 유지합니다.
+
+성공·오류 반환 때 중간 폴더를 정리하며, CLI의 종료 코드는 defer 정리가 끝난 뒤 적용됩니다. 강제 종료·삭제 실패의 잔여 폴더는 해당 작업이 끝난 것을 확인한 후 개별 정리합니다. report-mcp 배포는 [운영 메모](../report-mcp/deploy/PRIVATE_TMP.md)를 따릅니다.

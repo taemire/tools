@@ -55,6 +55,10 @@ Chrome 156.0.8078.80(macOS)에서 세 쪽 모두 중심 오차 (0.3 mm, −1.0 m
 
 상주 Chrome이 `127.0.0.1:9223`을 쓰는 상태에서 md2pdf가 같은 포트로 새 Chrome을 띄우면, Chrome은 IPv4 바인딩에 실패하고 `[::1]:9223`으로 DevTools를 엽니다(`--remote-debugging-address=127.0.0.1`을 주어도 같음, Chrome 156 재현). 방화벽은 UID 2000에 `127.0.0.1:9223`만 허용하므로 연결이 거부됐습니다. 이제 report-mcp는 md2pdf에 `MD2PDF_CHROME_URL=$REPORT_CHROME_URL`과 `MD2PDF_DEVTOOLS_PORT=$REPORT_MD2PDF_DEVTOOLS_PORT`(기본 9223)를 넘깁니다. md2pdf는 응답하는 상주 Chrome을 재사용하고 WebSocket 주소를 설정한 IPv4 주소로 고정합니다. 상주 Chrome이 없으면 포트가 비어 있는지 확인한 뒤에만 자체 Chrome을 띄우고, 점유돼 있으면 `DEVTOOLS_PORT_BUSY`, IPv6 광고를 보면 `DEVTOOLS_ADDRESS_FAMILY_MISMATCH`로 원인을 밝혀 실패합니다. 런타임 패치(`scripts/md2pdf-runtime.patch`)에서 고정 포트 줄은 뺐습니다.
 
+### `PrivateTmp`와 상주 Chrome의 공유 경로
+
+레거시 converter는 최종 출력 job 아래의 `.md2pdf-*`(0700)에 중간 HTML·PDF·TOC 자료를 만들고 성공·오류 반환 후 정리합니다. MCP도 자식 종료 후 해당 job의 중간 폴더를 정리해 converter timeout에 대비합니다. MCP의 전용 `/tmp`에 만든 HTML은 다른 namespace의 상주 Chrome이 읽을 수 없어 `ERR_FILE_NOT_FOUND`가 됩니다. v3·새 형식은 기존대로 job의 HTML을 읽습니다. MCP와 Chrome은 같은 `artex-runtime` UID를 사용하고 출력 루트가 두 프로세스에 같은 경로로 보여야 합니다. `PrivateTmp=yes`와 `127.0.0.1:9223` 방화벽은 유지하며 새 포트·서버·환경 변수는 필요 없습니다. 새 converter를 포함한 검증 빌드를 배포하고 [경로·권한·정리·수용 절차](deploy/PRIVATE_TMP.md)를 따릅니다.
+
 ### 운영 배포(별도 승인 단계)
 
 1. 빌드: 이 저장소의 커밋된 상태에서 빌드합니다. `build-converter.sh`는 작업 트리의 md2pdf를 복사하므로 미커밋 변경이 없는지 먼저 `git status`로 확인합니다.
