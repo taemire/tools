@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -331,7 +332,10 @@ func renderV3CLI(args []string) error {
 		return e
 	}
 	if in.SourceFormat != "artex-md-3" {
-		return errors.New("SOURCE_FORMAT_UNSUPPORTED")
+		return unsupportedFormat(in.SourceFormat)
+	}
+	if e = decodeV3Inputs(&in); e != nil {
+		return e
 	}
 	a, e := newApp(config{*sessions, *output, *output, "/not-used-by-v3"})
 	if e != nil {
@@ -344,5 +348,26 @@ func renderV3CLI(args []string) error {
 	}
 	b, _ := json.Marshal(r)
 	fmt.Println(string(b))
+	return nil
+}
+
+// decodeV3Inputs decodes render_inputs for artex-md-3 strictly (unknown
+// fields are refused, as the typed MCP input schema did before the field
+// became format-specific).
+func decodeV3Inputs(in *renderInput) error {
+	if in.RenderInputs != nil || in.RawRenderInputs == nil {
+		return nil
+	}
+	raw, e := json.Marshal(in.RawRenderInputs)
+	if e != nil {
+		return errors.New("RENDER_INPUT_INVALID")
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	var ri artexmd.RenderInputs
+	if dec.Decode(&ri) != nil {
+		return errors.New("RENDER_INPUT_INVALID")
+	}
+	in.RenderInputs = &ri
 	return nil
 }

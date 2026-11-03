@@ -19,6 +19,8 @@ Environment=REPORT_LISTEN=127.0.0.1:8891
 # falls back to its own Chrome on 127.0.0.1:9223 only when it does not answer.
 Environment=REPORT_CHROME_URL=http://127.0.0.1:9223
 Environment=REPORT_MD2PDF_DEVTOOLS_PORT=9223
+# Noto Sans JP/SC Bold TTF for Japanese/Chinese watermarks (arx-pentest-report-1); optional.
+Environment=REPORT_PR_FONT_DIR=/opt/artex-lab/report-mcp/fonts
 ExecStart=/opt/artex-lab/report-mcp/bin/report-mcp
 Restart=on-failure
 RestartSec=3

@@ -1,5 +1,78 @@
 # ARTEX 보고서 MCP
 
+## 0.3.0 고객 보고서 새 형식 `arx-pentest-report-1`
+
+플랫폼(ARX)이 만든 구조화 JSON(형식 `arx-pentest-report` 1.0·1.1)을 HTML 템플릿과 인쇄 CSS로 PDF로 만듭니다. 플랫폼은 데이터·계산·마스킹·게이트·워터마크 설정 해석을, 이 서비스는 템플릿·인쇄·PDF 검사를 맡습니다(플랫폼 ADR 0008). 렌더러는 값을 계산·재작성하지 않고 받은 그대로 배치하며, 재현 절차와 PoC 문자열도 바꾸지 않습니다. 기본 양식은 전달된 샘플 보고서의 양식(제목 구성, 문서 정보·검토 및 승인 표, 장·절, 표의 열·머리글, 발견 사항 상세의 절)과 같고, 이후 추가된 요소는 `render_inputs.form`으로만 켭니다. 구현과 자산 출처는 [pentestreport/README.md](pentestreport/README.md)에 있습니다.
+
+### 요청
+
+`render_report`에 다음 필드를 보냅니다. `markdown_file`·`title`·`graph`·`formats`는 이 형식에서 받지 않습니다.
+
+| 필드 | 값 |
+|---|---|
+| `session_id` | `conv-N` 또는 `task-N`. 출력 위치(`<REPORT_OUTPUT_ROOT>/<session>/job-…`)만 정합니다 |
+| `source_format` | `"arx-pentest-report-1"` |
+| `source` | 플랫폼의 `Evaluation.Resolved`(JSON 객체, 8 MiB 이하). `format.version`의 스키마로 검증하고 알 수 없는 판은 거부합니다 |
+| `render_inputs.watermark` | 플랫폼이 해석한 적용 워터마크(`AppliedWatermark`). 필수 |
+| `render_inputs.form` | 선택 요소 7개(`revision_history` 등). 생략하면 샘플 양식 |
+| `render_inputs.names` | 표지·바닥글 제목과 고정 문구의 제품명(`Evaluation.Names`). 필수 |
+| `render_inputs.sensitive_values` | 마스킹 전 등록 민감값. 출력에서 발견되면 실패합니다. 디스크·로그·영수증에 남기지 않습니다 |
+| `render_inputs.metadata` | PDF Author·Subject |
+| `render_inputs.expect` | 시험한 템플릿 판·해시 고정(선택) |
+| `render_inputs.formats` | `pdf`·`html`(생략 시 둘 다) |
+
+`source_format`을 생략하면 기존 Markdown(md2pdf) 경로, `"artex-md-3"`이면 기존 v3 경로입니다. 그 밖의 값(예: `"markdown"`)은 `SOURCE_FORMAT_UNSUPPORTED`와 함께 지원 값과 Markdown 사용법을 돌려줍니다. `source`나 `render_inputs`만 보내고 `source_format`을 빠뜨리면 `SOURCE_FORMAT_REQUIRED`입니다.
+
+### 검사와 영수증
+
+- 거부: `SCHEMA_INVALID`, `SOURCE_FORMAT_VERSION_UNSUPPORTED`, `SOURCE_NOT_RESOLVED`(계산값 누락), `SOURCE_INCONSISTENT`(같은 값의 두 사본이 다름), `WATERMARK_*`, `TEMPLATE_*_MISMATCH`.
+- 출력 검사: `RENDERED_ACTIVE_CONTENT`, `SENSITIVE_VALUE_IN_OUTPUT`(HTML 보이는 텍스트·주석·속성·원문, PDF 텍스트·문서 정보, 워터마크 문구; 값 대신 번호만 보고), `PDF_FONT_UNEXPECTED`(Pretendard·D2Coding·Noto Sans JP/SC 외), `PDF_FONT_TYPE3`, `WATERMARK_TEXT_IN_PDF`, 쪽 수, 기존 `qpdf --check`·텍스트 경계·쪽 미리보기.
+- 실패한 job은 `report.html`·`report.pdf`를 지우고 `FAILED` 영수증만 남깁니다.
+- 영수증 `arx_pentest_report`에 형식·언어, 렌더러·템플릿 판, Chrome 판, 입력 해시(`source_sha256`, 민감값을 뺀 `render_inputs_sha256`), 템플릿·CSS·토큰·사전·스키마 해시, 글꼴 파일 해시, 적용 워터마크와 윤곽 해시, 양식, 이름, 민감값 개수, 출력 해시, PDF 쪽 수·글꼴을 남깁니다. 입력 해시는 키를 정렬하고 HTML 이스케이프를 하지 않은 JSON(UTF-8, 끝 개행 없음) 기준입니다.
+- 기계 검사 통과는 `GENERATED_MACHINE_CHECKS_PASS`이고 `customer_release`는 `HOLD_REQUIRES_CONTENT_AND_VISUAL_REVIEW`입니다. 발행 게이트 판정은 플랫폼 영수증에 있습니다.
+
+상주 Chrome에서 인쇄할 때는 렌더마다 `disposeOnDetach` 브라우저 컨텍스트를 새 창으로 열고 끝나면 지웁니다. 쿠키·저장소·캐시를 다른 렌더와 공유하지 않습니다. DevTools 포트는 인증이 없으므로 `REPORT_CHROME_URL`은 보고서 서비스 전용 Chrome이 있는 단일 사용자 호스트의 루프백 주소로만 둡니다.
+
+### 워터마크 위치 회귀 시험
+
+워터마크는 `@page` 배경이며, Chromium이 배경을 쪽 영역 기준으로 놓는 동작에 맞춰 여백만큼 보정합니다. Chrome을 갱신하면 운영 호스트에서 다음을 실행합니다. 표지·본문 3쪽의 워터마크 중심이 쪽 중심에서 2 mm 안에 있고, `body_only`이면 표지에 없어야 통과합니다.
+
+```sh
+sudo -u artex-runtime /opt/artex-lab/report-mcp/bin/report-mcp wm-position-check --chrome-url http://127.0.0.1:9223
+sudo -u artex-runtime /opt/artex-lab/report-mcp/bin/report-mcp wm-position-check --chrome-url http://127.0.0.1:9223 --pages body_only
+```
+
+Chrome 156.0.8078.80(macOS)에서 세 쪽 모두 중심 오차 (0.3 mm, −1.0 mm)였고, 보정을 끄면 실패로 잡힙니다.
+
+### md2pdf 브라우저 연결(운영 장애 2026-11-02 수정)
+
+상주 Chrome이 `127.0.0.1:9223`을 쓰는 상태에서 md2pdf가 같은 포트로 새 Chrome을 띄우면, Chrome은 IPv4 바인딩에 실패하고 `[::1]:9223`으로 DevTools를 엽니다(`--remote-debugging-address=127.0.0.1`을 주어도 같음, Chrome 156 재현). 방화벽은 UID 2000에 `127.0.0.1:9223`만 허용하므로 연결이 거부됐습니다. 이제 report-mcp는 md2pdf에 `MD2PDF_CHROME_URL=$REPORT_CHROME_URL`과 `MD2PDF_DEVTOOLS_PORT=$REPORT_MD2PDF_DEVTOOLS_PORT`(기본 9223)를 넘깁니다. md2pdf는 응답하는 상주 Chrome을 재사용하고 WebSocket 주소를 설정한 IPv4 주소로 고정합니다. 상주 Chrome이 없으면 포트가 비어 있는지 확인한 뒤에만 자체 Chrome을 띄우고, 점유돼 있으면 `DEVTOOLS_PORT_BUSY`, IPv6 광고를 보면 `DEVTOOLS_ADDRESS_FAMILY_MISMATCH`로 원인을 밝혀 실패합니다. 런타임 패치(`scripts/md2pdf-runtime.patch`)에서 고정 포트 줄은 뺐습니다.
+
+### 운영 배포(별도 승인 단계)
+
+1. 빌드: 이 저장소의 커밋된 상태에서 빌드합니다. `build-converter.sh`는 작업 트리의 md2pdf를 복사하므로 미커밋 변경이 없는지 먼저 `git status`로 확인합니다.
+   ```sh
+   cd report-mcp
+   go test -race ./... && go vet ./...
+   GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /abs/out/report-mcp .
+   ./scripts/build-converter.sh /abs/new-build-dir /abs/out/md2pdf
+   sha256sum /abs/out/report-mcp /abs/out/md2pdf
+   ```
+2. 백업: 운영 `/opt/artex-lab/report-mcp/bin/{report-mcp,md2pdf}`와 `/etc/systemd/system/report-mcp.service`를 날짜 붙은 이름으로 복사합니다. 실행 중인 렌더(`report-pdf` job의 `RENDERING` 영수증)와 진행 중인 대화가 없는지 확인합니다.
+3. 상주 Chrome 확인: `curl -s http://127.0.0.1:9223/json/version`의 `Browser`와 `webSocketDebuggerUrl` 호스트가 `127.0.0.1`인지, `ss -ltnp | grep 9223`에 `[::1]:9223` 리스너가 없는지 봅니다. 상주 Chrome을 띄우는 unit은 이 저장소 `deploy/`에 없으므로 운영 구성을 따로 확인합니다.
+4. 설치: 두 바이너리를 같은 경로에 0755로 바꾸고, `deploy/report-mcp.service`의 새 `Environment` 줄 3개(`REPORT_CHROME_URL`, `REPORT_MD2PDF_DEVTOOLS_PORT`, `REPORT_PR_FONT_DIR`)를 반영합니다. 일본어·중국어 워터마크를 쓸 때만 허용 목록 SHA-256과 같은 `NotoSansJP-700.ttf`·`NotoSansSC-700.ttf`를 `/opt/artex-lab/report-mcp/fonts/`(0644)에 둡니다.
+5. 재시작과 확인:
+   ```sh
+   sudo systemctl daemon-reload && sudo systemctl restart report-mcp.service
+   curl -s http://127.0.0.1:8891/health                # "version":"0.3.0"
+   sudo -u artex-runtime /opt/artex-lab/report-mcp/bin/report-mcp wm-position-check
+   ```
+   MCP `get_report_result`에 `capabilities_only=true`를 보내 `arx-pentest-report-1`이 있는지 보고, 기존 Markdown 경로로 시험 문서 한 건을 생성해 `render.log`에 `Using running Chrome at http://127.0.0.1:9223`과 `GENERATED_MACHINE_CHECKS_PASS`를 확인합니다.
+6. 롤백: 백업한 두 바이너리와 unit 파일을 되돌리고 `daemon-reload`·`restart` 후 `/health`의 버전이 0.2.x인지 확인합니다. 새 형식 job 폴더는 그대로 두어도 기존 경로에 영향이 없습니다. 플랫폼이 새 형식을 호출하기 전이면 롤백은 이 서비스만으로 끝납니다.
+
+위험: 출력 HTML은 글꼴을 data URI로 넣어 약 12 MB입니다. 서비스 메모리 상한(1536M)과 운영 Chrome에서의 메모리·속도는 로컬에서 시험하지 않았으므로 배포 단계에서 확인합니다. 운영 Chrome 판이 156이 아니면 위치 회귀 시험을 먼저 통과시켜야 합니다.
+
+
 ## 0.2.1 보고서 글꼴·출력 품질 수정
 
 플랫폼이 직렬화하는 SVG 글꼴 이름은 기존 wire 계약인 `ARTEXReport`·`ARTEXMono`입니다. 표시 브랜드·설정 접두어와 구분하며 MCP의 SVG 허용 목록을 확대하지 않습니다.

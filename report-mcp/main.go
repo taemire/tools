@@ -30,9 +30,10 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
 	"report-mcp/artexmd"
+	"report-mcp/pentestreport"
 )
 
-const version = "0.2.1"
+const version = "0.3.0"
 
 var sessionPattern = regexp.MustCompile(`^(conv|task)-[0-9]+$`)
 var jobPattern = regexp.MustCompile(`^job-[a-f0-9]{32}$`)
@@ -45,16 +46,21 @@ type app struct {
 	busy             chan struct{}
 	parseV3          func([]byte) (*artexmd.Document, error)
 	nowV3            func() time.Time
+	chromeExec       string // local CLI only: start this Chrome instead of REPORT_CHROME_URL
 }
 type renderInput struct {
-	SessionID    string                `json:"session_id" jsonschema:"ARTEX session folder, for example conv-39"`
-	MarkdownFile string                `json:"markdown_file" jsonschema:"Markdown path relative to this session folder"`
-	Title        string                `json:"title" jsonschema:"Customer report title"`
-	Author       string                `json:"author,omitempty" jsonschema:"Report author or company"`
-	Graph        *reportGraph          `json:"graph,omitempty" jsonschema:"Existing task relationships for a static customer diagram; no new discovery"`
-	SourceFormat string                `json:"source_format,omitempty"`
-	Formats      []string              `json:"formats,omitempty"`
-	RenderInputs *artexmd.RenderInputs `json:"render_inputs,omitempty"`
+	SessionID    string       `json:"session_id" jsonschema:"ARTEX session folder, for example conv-39"`
+	MarkdownFile string       `json:"markdown_file,omitempty" jsonschema:"Markdown path relative to this session folder (legacy and artex-md-3)"`
+	Title        string       `json:"title,omitempty" jsonschema:"Customer report title (legacy path)"`
+	Author       string       `json:"author,omitempty" jsonschema:"Report author or company"`
+	Graph        *reportGraph `json:"graph,omitempty" jsonschema:"Existing task relationships for a static customer diagram; no new discovery"`
+	SourceFormat string       `json:"source_format,omitempty" jsonschema:"Omit for a session Markdown file (legacy md2pdf). artex-md-3: session Markdown with render_inputs. arx-pentest-report-1: source is the resolved arx-pentest-report JSON"`
+	Formats      []string     `json:"formats,omitempty" jsonschema:"artex-md-3 only: html, pdf, docx"`
+	Source       any          `json:"source,omitempty" jsonschema:"arx-pentest-report-1 only: the platform's resolved arx-pentest-report 1.x document (JSON object)"`
+	// RawRenderInputs is decoded per source format (artexmd.RenderInputs or
+	// pentestreport.RenderInputs).
+	RawRenderInputs any                   `json:"render_inputs,omitempty" jsonschema:"Format-specific render inputs; see README"`
+	RenderInputs    *artexmd.RenderInputs `json:"-"`
 }
 type resultInput struct {
 	SessionID        string `json:"session_id"`
@@ -75,6 +81,7 @@ type receipt struct {
 	CustomerRelease string            `json:"customer_release"`
 	CreatedAt       string            `json:"created_at"`
 	V3              *v3Receipt        `json:"v3,omitempty"`
+	PentestReport   *pentestReceipt   `json:"arx_pentest_report,omitempty"`
 	Capabilities    []string          `json:"capabilities,omitempty"`
 }
 
@@ -404,11 +411,20 @@ func (a *app) inspect(ctx context.Context, r *receipt) error {
 	return nil
 }
 func (a *app) render(ctx context.Context, in renderInput) (receipt, error) {
-	if in.SourceFormat != "" {
-		if in.SourceFormat != "artex-md-3" {
-			return receipt{}, errors.New("SOURCE_FORMAT_UNSUPPORTED")
+	switch in.SourceFormat {
+	case "":
+		if in.Source != nil || in.RawRenderInputs != nil || in.RenderInputs != nil {
+			return receipt{}, errors.New("SOURCE_FORMAT_REQUIRED: source or render_inputs was given without source_format; use \"artex-md-3\" or \"" + pentestreport.SourceFormat + "\", or send only markdown_file for the legacy Markdown path")
+		}
+	case "artex-md-3":
+		if e := decodeV3Inputs(&in); e != nil {
+			return receipt{}, e
 		}
 		return a.renderV3(ctx, in, "")
+	case pentestreport.SourceFormat:
+		return a.renderPentest(ctx, in)
+	default:
+		return receipt{}, unsupportedFormat(in.SourceFormat)
 	}
 	var r receipt
 	if !sessionPattern.MatchString(in.SessionID) {
@@ -507,7 +523,7 @@ func (a *app) server() *mcp.Server {
 		r, e := a.renderReportFigures(ctx, in)
 		return nil, r, e
 	})
-	mcp.AddTool(s, &mcp.Tool{Name: "render_report", Description: "Generate a customer PDF/HTML and all-page previews from existing session Markdown. Does not scan sites or certify report claims."}, func(ctx context.Context, _ *mcp.CallToolRequest, in renderInput) (*mcp.CallToolResult, receipt, error) {
+	mcp.AddTool(s, &mcp.Tool{Name: "render_report", Description: "Generate a customer PDF/HTML and all-page previews. source_format: omit for session Markdown (markdown_file); \"artex-md-3\" for slot Markdown with render_inputs; \"arx-pentest-report-1\" for the platform's resolved arx-pentest-report JSON in source with render_inputs. Other values (for example \"markdown\") are refused. Does not scan sites or certify report claims."}, func(ctx context.Context, _ *mcp.CallToolRequest, in renderInput) (*mcp.CallToolResult, receipt, error) {
 		r, e := a.render(ctx, in)
 		return nil, r, e
 	})
@@ -536,7 +552,7 @@ func (a *app) server() *mcp.Server {
 	})
 	mcp.AddTool(s, &mcp.Tool{Name: "get_report_result", Description: "Get generated file paths, hashes and machine checks. Content/visual customer review remains separate."}, func(_ context.Context, _ *mcp.CallToolRequest, in resultInput) (*mcp.CallToolResult, receipt, error) {
 		if in.CapabilitiesOnly {
-			return nil, receipt{Status: "CAPABILITIES", Checks: map[string]string{}, PreviewPaths: []string{}, Capabilities: []string{"artex-md-3", "docx", "render_report_figures"}}, nil
+			return nil, receipt{Status: "CAPABILITIES", Checks: map[string]string{}, PreviewPaths: []string{}, Capabilities: []string{"artex-md-3", "docx", "render_report_figures", pentestreport.SourceFormat}}, nil
 		}
 		r, e := a.load(in)
 		return nil, r, e
@@ -546,6 +562,20 @@ func (a *app) server() *mcp.Server {
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "render-v3" {
 		if e := renderV3CLI(os.Args[2:]); e != nil {
+			log.Print(e)
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "wm-position-check" {
+		if e := positionCLI(os.Args[2:]); e != nil {
+			log.Print(e)
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "render-pentest" {
+		if e := pentestCLI(os.Args[2:]); e != nil {
 			log.Print(e)
 			os.Exit(1)
 		}
