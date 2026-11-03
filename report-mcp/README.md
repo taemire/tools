@@ -21,6 +21,8 @@
 | `render_inputs.expect` | 시험한 템플릿 판·해시 고정(선택) |
 | `render_inputs.formats` | `pdf`·`html`(생략 시 둘 다) |
 
+형식 1.1의 표시 필드 4개(`team_text`, `list_title`, `detail_title`, `kisa_note`)는 값이 있으면 샘플 표기대로 그 자리에 넣고, 없으면 기존 패턴으로 출력합니다(규칙은 [pentestreport/README.md](pentestreport/README.md)).
+
 `source_format`을 생략하면 기존 Markdown(md2pdf) 경로, `"artex-md-3"`이면 기존 v3 경로입니다. 그 밖의 값(예: `"markdown"`)은 `SOURCE_FORMAT_UNSUPPORTED`와 함께 지원 값과 Markdown 사용법을 돌려줍니다. `source`나 `render_inputs`만 보내고 `source_format`을 빠뜨리면 `SOURCE_FORMAT_REQUIRED`입니다.
 
 ### 검사와 영수증
