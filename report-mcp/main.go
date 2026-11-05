@@ -73,6 +73,7 @@ type receipt struct {
 	Status          string            `json:"status"`
 	PDFPath         string            `json:"pdf_path"`
 	HTMLPath        string            `json:"html_path"`
+	DOCXPath        string            `json:"docx_path,omitempty"`
 	PreviewPaths    []string          `json:"preview_paths"`
 	PageCount       int               `json:"page_count"`
 	SHA256          string            `json:"sha256"`
@@ -560,7 +561,7 @@ func (a *app) server() *mcp.Server {
 	})
 	mcp.AddTool(s, &mcp.Tool{Name: "get_report_result", Description: "Get generated file paths, hashes and machine checks. Content/visual customer review remains separate."}, func(_ context.Context, _ *mcp.CallToolRequest, in resultInput) (*mcp.CallToolResult, receipt, error) {
 		if in.CapabilitiesOnly {
-			return nil, receipt{Status: "CAPABILITIES", Checks: map[string]string{}, PreviewPaths: []string{}, Capabilities: []string{"artex-md-3", "docx", "render_report_figures", pentestreport.SourceFormat}}, nil
+			return nil, receipt{Status: "CAPABILITIES", Checks: map[string]string{}, PreviewPaths: []string{}, Capabilities: []string{"artex-md-3", "docx", "render_report_figures", pentestreport.SourceFormat, pentestreport.SourceFormat + ":docx"}}, nil
 		}
 		r, e := a.load(in)
 		return nil, r, e
