@@ -23,7 +23,7 @@
 | `render_inputs.sensitive_values` | 마스킹 전 등록 민감값. 출력에서 발견되면 실패합니다. 디스크·로그·영수증에 남기지 않습니다 |
 | `render_inputs.metadata` | PDF Author·Subject |
 | `render_inputs.expect` | 시험한 템플릿 판·해시 고정(선택) |
-| `render_inputs.formats` | `pdf`·`html`(생략 시 둘 다) |
+| `render_inputs.formats` | `pdf`·`html`·`docx`(생략 시 `pdf`·`html`). DOCX는 요청할 때만 만듭니다 |
 
 형식 1.1의 표시 필드 4개(`team_text`, `list_title`, `detail_title`, `kisa_note`)는 값이 있으면 샘플 표기대로 그 자리에 넣고, 없으면 기존 패턴으로 출력합니다(규칙은 [pentestreport/README.md](pentestreport/README.md)).
 
@@ -39,6 +39,21 @@
 - 기계 검사 통과는 `GENERATED_MACHINE_CHECKS_PASS`이고 `customer_release`는 `HOLD_REQUIRES_CONTENT_AND_VISUAL_REVIEW`입니다. 발행 게이트 판정은 플랫폼 영수증에 있습니다.
 
 상주 Chrome에서 인쇄할 때는 렌더마다 `disposeOnDetach` 브라우저 컨텍스트를 새 창으로 열고 끝나면 지웁니다. 쿠키·저장소·캐시를 다른 렌더와 공유하지 않습니다. DevTools 포트는 인증이 없으므로 `REPORT_CHROME_URL`은 보고서 서비스 전용 Chrome이 있는 단일 사용자 호스트의 루프백 주소로만 둡니다.
+
+### DOCX 출력
+
+사용자 원본 Word 양식의 편집 가능한 DOCX를 PDF와 같은 요청으로 만듭니다. 요청 스키마(`source`)는 그대로이고 `render_inputs.formats`에 `"docx"`를 넣습니다(예: `["pdf","html","docx"]`). PDF와 DOCX는 같은 `Build` 결과로 만들므로 문구·표 값·발견 순서·재현 절차·PoC 원문이 같습니다. 양식·글꼴·검사는 [렌더러 안내](pentestreport/README.md#docx-출력)를 따릅니다.
+
+| 항목 | 값 |
+|---|---|
+| 지원 확인 | `get_report_result`(`capabilities_only=true`)의 `capabilities`에 `arx-pentest-report-1:docx`. 이 값이 없는 렌더러는 `docx`를 `RENDER_FORMAT_INVALID`로 거부합니다 |
+| 출력 파일 | job 폴더의 `report.docx`. 영수증 최상위 `docx_path`(표시 경로 `/app/data/report-pdf/<session>/<job>/report.docx`) |
+| 영수증 | `arx_pentest_report.outputs.docx_sha256`, `arx_pentest_report.docx`(부품 목록, 지정 글꼴, `fonts_embedded: false`, 워터마크 방식, 문서 속성의 해시·길이, `docx_template_sha256`), `template.docx_template_sha256`과 `template.docx/*` 파일 해시 |
+| 검사 | `docx_structure`, `docx_fonts_not_embedded`, `docx_text_matches_html`이 `PASS`, `docx_sensitive_values`가 `PASS_<n>_VALUES` |
+| 실패 | `DOCX_*`, `SENSITIVE_VALUE_IN_OUTPUT`(위치 `docx_visible`·`docx_hidden`·`docx_properties`·`docx_raw`). 실패하면 HTML·PDF·DOCX를 모두 지웁니다 |
+| `sha256` | 기존과 같습니다(PDF가 있으면 PDF, 없으면 HTML의 SHA-256) |
+
+DOCX 템플릿 부품이 템플릿 묶음에 들어가므로 `TemplateSHA256()`이 바뀝니다. `expect.template_sha256`을 쓰는 호출자는 새 값으로 갱신합니다. `validate_report`는 기존처럼 PDF만 다시 검사합니다.
 
 ### 워터마크 위치 회귀 시험
 
