@@ -286,6 +286,7 @@
 
         /* Tables */
         table {
+            word-break: keep-all;
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
@@ -302,6 +303,13 @@
         td {
             padding: 12px;
             border: 1px solid #e2e8f0;
+        }
+
+        /* 표 안 인라인 코드: 경로·해시·명령이 줄을 바꾸지 못해 표가 쪽 밖으로 잘리지 않게 한다. */
+        td code,
+        th code {
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
 
         tr:nth-child(even) {
