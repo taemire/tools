@@ -44,7 +44,7 @@ func TestV3CapabilitiesOutputSchema(t *testing.T) {
 	if e = json.NewDecoder(res.Body).Decode(&response); e != nil {
 		t.Fatal(e)
 	}
-	if response.Error != nil || response.Result.Structured.Status != "CAPABILITIES" || len(response.Result.Structured.Capabilities) != 4 {
+	if response.Error != nil || response.Result.Structured.Status != "CAPABILITIES" || len(response.Result.Structured.Capabilities) != 5 || response.Result.Structured.Capabilities[4] != "arx-pentest-report-1:docx" {
 		t.Fatal(response)
 	}
 }
