@@ -244,10 +244,12 @@ func runEnv(ctx context.Context, extra []string, name string, args ...string) (s
 	return string(b), nil
 }
 
-func embedHTMLFonts(path string) error {
+// embedHTMLFonts rewrites the HTML with data-URI fonts and returns the exact
+// bytes written, which are the bytes the receipt's HTML hash covers.
+func embedHTMLFonts(path string) ([]byte, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	s := string(b)
 	for _, name := range []string{"NanumGothic.ttf", "NanumGothicBold.ttf"} {
@@ -258,11 +260,15 @@ func embedHTMLFonts(path string) error {
 		}
 		font, err := os.ReadFile(file)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		s = strings.ReplaceAll(s, needle, "data:font/ttf;base64,"+base64.StdEncoding.EncodeToString(font))
 	}
-	return os.WriteFile(path, []byte(s), 0640)
+	out := []byte(s)
+	if err = os.WriteFile(path, out, 0640); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 func bboxCheck(data []byte) (int, int, error) {
 	d := xml.NewDecoder(strings.NewReader(string(data)))
@@ -512,9 +518,16 @@ func (a *app) render(ctx context.Context, in renderInput) (receipt, error) {
 		}
 		return r, err
 	}
-	if err = embedHTMLFonts(filepath.Join(dir, "report.html")); err != nil {
+	htmlBytes, err := embedHTMLFonts(filepath.Join(dir, "report.html"))
+	if err != nil {
 		return r, err
 	}
+	// Same field as artex-md-3: the chat download gate serves report.html only
+	// when v3.html_sha256 matches the file. Only the hash is set; the other v3
+	// fields stay empty (source_format ""), so the tool output still matches
+	// the published schema and artex-md-3 consumers keep refusing this job.
+	htmlSum := sha256.Sum256(htmlBytes)
+	r.V3 = &v3Receipt{HTMLSHA256: hex.EncodeToString(htmlSum[:])}
 	err = a.inspect(ctx, &r)
 	r.Checks["toc"] = "PASS"
 	if err != nil {

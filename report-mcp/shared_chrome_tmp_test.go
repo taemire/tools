@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -235,10 +237,25 @@ func TestResidentChromeAcrossPrivateTmp(t *testing.T) {
 					t.Fatal("converter did not use resident Chrome and job workspace", e)
 				}
 			}
+			// Every path binds the served report.html to its receipt by SHA-256.
+			html, e := os.ReadFile(r.HTMLPath)
+			if e != nil {
+				t.Fatal("no HTML", e)
+			}
+			htmlSum := sha256.Sum256(html)
+			recorded := ""
+			switch {
+			case tc.name == "pentest" && r.PentestReport != nil:
+				recorded = r.PentestReport.Outputs["html_sha256"]
+			case tc.name != "pentest" && r.V3 != nil:
+				recorded = r.V3.HTMLSHA256
+			}
+			if recorded != hex.EncodeToString(htmlSum[:]) {
+				t.Fatalf("%s receipt HTML SHA-256 %q does not match report.html", tc.name, recorded)
+			}
 			if tc.name == "legacy" {
-				html, e := os.ReadFile(r.HTMLPath)
-				if e != nil || !strings.Contains(string(html), "data:image/png;base64,") {
-					t.Fatal("legacy image not embedded", e)
+				if !strings.Contains(string(html), "data:image/png;base64,") {
+					t.Fatal("legacy image not embedded")
 				}
 				fontNames, e := exec.Command("pdffonts", r.PDFPath).Output()
 				if e != nil || !strings.Contains(string(fontNames), "Pretendard") {

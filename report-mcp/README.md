@@ -74,6 +74,15 @@ Chrome 156.0.8078.80(macOS)에서 세 쪽 모두 중심 오차 (0.3 mm, −1.0 m
 
 레거시 converter는 최종 출력 job 아래의 `.md2pdf-*`(0700)에 중간 HTML·PDF·TOC 자료를 만들고 성공·오류 반환 후 정리합니다. MCP도 자식 종료 후 해당 job의 중간 폴더를 정리해 converter timeout에 대비합니다. MCP의 전용 `/tmp`에 만든 HTML은 다른 namespace의 상주 Chrome이 읽을 수 없어 `ERR_FILE_NOT_FOUND`가 됩니다. v3·새 형식은 기존대로 job의 HTML을 읽습니다. MCP와 Chrome은 같은 `artex-runtime` UID를 사용하고 출력 루트가 두 프로세스에 같은 경로로 보여야 합니다. `PrivateTmp=yes`와 `127.0.0.1:9223` 방화벽은 유지하며 새 포트·서버·환경 변수는 필요 없습니다. 새 converter를 포함한 검증 빌드를 배포하고 [경로·권한·정리·수용 절차](deploy/PRIVATE_TMP.md)를 따릅니다.
 
+### Markdown 경로 영수증의 HTML 해시
+
+`source_format`을 생략한 Markdown(md2pdf) 경로도 영수증의 `v3.html_sha256`에 최종 `report.html`의 SHA-256(소문자 16진수 64자)을 남깁니다. 해시 대상은 글꼴을 data URI로 넣은 뒤 디스크에 쓴 바이트입니다. artex-md-3와 같은 필드이며, ARX 대화 보고서 카드는 이 값과 파일이 일치할 때만 HTML 다운로드를 엽니다.
+
+- 이 경로의 `v3`는 `html_sha256`만 값이 있습니다. 나머지 필드는 빈 값(`source_format: ""`, 판·해시 필드 `""`, `font_sha256`·`figures`는 `null`)입니다. 도구 출력 스키마가 `v3`의 필드를 필수로 두므로 빈 값으로 채우며, artex-md-3 출처를 뜻하지 않습니다. artex-md-3 결과는 `v3.source_format`이 `"artex-md-3"`인지로 판별합니다.
+- 최상위 `sha256`은 기존처럼 PDF의 해시입니다. `validate_report`는 영수증을 다시 쓸 때 `v3`를 그대로 보존하며 HTML을 다시 검사하지는 않습니다.
+- HTML이 만들어지지 않으면 job은 기존처럼 실패하고 HTML 해시를 남기지 않습니다. 이 변경 전에 만든 영수증에는 `v3`가 없으므로 그 결과의 HTML 다운로드는 계속 비활성입니다.
+- 도구 입출력 스키마와 템플릿 해시(`TemplateSHA256`, artex-md-3 `TemplateSHA256`)는 바뀌지 않습니다.
+
 ### 운영 배포(별도 승인 단계)
 
 1. 빌드: 이 저장소의 커밋된 상태에서 빌드합니다. `build-converter.sh`는 작업 트리의 md2pdf를 복사하므로 미커밋 변경이 없는지 먼저 `git status`로 확인합니다.
