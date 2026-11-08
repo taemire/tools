@@ -21,6 +21,11 @@ Environment=REPORT_CHROME_URL=http://127.0.0.1:9223
 Environment=REPORT_MD2PDF_DEVTOOLS_PORT=9223
 # Noto Sans JP/SC Bold TTF for Japanese/Chinese watermarks (arx-pentest-report-1); optional.
 Environment=REPORT_PR_FONT_DIR=/opt/artex-lab/report-mcp/fonts
+# Pinned figure faces for render_report_figures: the same files and hashes as the app font dir (ARTEX_REPORT_VISUAL_FONT_DIR). Required.
+Environment=REPORT_FIGURE_FONT_REGULAR=/opt/artex-lab/data/fonts/Pretendard-Regular.otf
+Environment=REPORT_FIGURE_FONT_MONO=/opt/artex-lab/data/fonts/D2Coding.ttf
+Environment=REPORT_FIGURE_FONT_MEDIUM=/opt/artex-lab/data/fonts/Pretendard-Medium.otf
+Environment=REPORT_FIGURE_FONT_BOLD=/opt/artex-lab/data/fonts/Pretendard-Bold.otf
 ExecStart=/opt/artex-lab/report-mcp/bin/report-mcp
 Restart=on-failure
 RestartSec=3

@@ -183,6 +183,8 @@ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /tmp/report-mcp .
 
 `/opt/artex-lab/report-mcp/bin`에 두 바이너리를 배치하고, cache와 출력 폴더만 UID 2000에 쓰기 권한을 부여합니다. 입력 sessions는 서비스에서 읽기 전용입니다. `deploy/`의 systemd 및 방화벽 파일을 지정된 호스트 경로에 배치합니다. 계정 UID가 이미 사용 중인지 먼저 확인합니다.
 
+`deploy/report-mcp.service`는 `REPORT_FIGURE_FONT_REGULAR/MONO/MEDIUM/BOLD`를 앱 글꼴 폴더(`ARTEX_REPORT_VISUAL_FONT_DIR`의 호스트 경로 `/opt/artex-lab/data/fonts`)의 Pretendard-Regular·D2Coding·Pretendard-Medium·Pretendard-Bold 파일로 지정합니다. 네 키 중 하나라도 없으면 `render_report_figures`가 `FIGURE_RENDER_UNAVAILABLE`로 즉시 실패합니다.
+
 `report-mcp-firewall.sh`는 기존 UID 2000용 `ARTEX_LAB_OUTPUT`에 **127.0.0.1 TCP 8891/9223**만 추가합니다. SG·외부 인바운드·다른 UID 정책은 변경하지 않습니다. 기본 방화벽 서비스를 수동 재시작하면 추가 규칙이 사라질 수 있으므로 보고서 방화벽 서비스를 다시 실행해야 합니다. enabled 상태와 실제 재부팅 검증은 별개입니다.
 
 MCP 설정에 HTTP 서버 `report-pdf`, URL `http://127.0.0.1:8891/mcp`를 등록하고 reporter에게 도구를 연결합니다. 서비스 자체에는 외부 인증을 붙이지 않으므로 루프백 노출을 유지합니다. UI API와 파일 다운로드에는 기존 ARTEX 로그인이 적용됩니다.
