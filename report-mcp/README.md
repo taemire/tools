@@ -243,3 +243,10 @@ v3 DOCX는 모든 참조 paragraph/character/table 스타일을 정의하고 Hea
 ARTEX의 `appendix.customer_facts` 슬롯은 독립 쪽에서 시작합니다. 해당 슬롯의 2열 표만 번호 680/내용 8391 dxa(HTML 8/92%)로 렌더하며, 기존 슬롯·일반 표의 배치는 유지합니다. 새 슬롯을 포함한 의미 투영은 ARTEX가 발급 전에 독립 계산합니다. 후보 제출은 원본 상세를 바꾸지 않으며, 렌더 성공을 고객 내용 승인으로 해석하지 않습니다.
 
 새 형식의 지면(줄 간격, 표 행 높이, 쪽 번호, 쪽 나눔, 한글 줄바꿈)은 Word로 만든 사용자 원본 13쪽 기준입니다. 글꼴은 맑은 고딕·Consolas 대신 DejaVu Sans와 정적 TrueType Noto CJK SC를 그대로 사용하므로 글자 폭과 줄바꿈 위치는 원본과 다를 수 있고, Type 3는 거부합니다. 승인 기록이 없어도 작성·검토·승인 행과 빈 서명 칸을 유지합니다. 글꼴 출처·라이선스·원본 내용 재현 시험은 [렌더러 안내](pentestreport/README.md)를 따릅니다.
+
+
+### 일반 Markdown 문단 쪽나눔
+
+기존 customer 템플릿은 긴 문단을 페이지 사이에서 나눌 수 있게 `p`의 `break-inside`·`page-break-inside`만 `auto`로 둡니다. 페이지보다 긴 문단을 통째로 다음 쪽에 밀어 footer만 남기던 빈 페이지를 막습니다. 원문 Markdown·문단 내용과 제목 keep·목록 항목·이미지·표·orphans/widows·글꼴·여백은 바꾸지 않습니다. `scripts/build-converter.sh`로 템플릿이 포함된 converter를 별도로 빌드해야 적용되며 기존 바이너리가 자동 교체되지는 않습니다.
+
+회귀 검증은 `customer_pagination_test.go`의 단문·장문·긴 목록·증거 code·제목 keep 표본과 실제 PDF/HTML·글꼴·목차·본문 위치를 대조합니다. macOS 로컬 폰트 fixture의 통과와 Linux 운영 수용은 별도입니다. 배포·기존 바이너리 교체는 별도 승인 범위입니다.
