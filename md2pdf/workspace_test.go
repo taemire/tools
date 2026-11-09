@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -30,8 +31,13 @@ func TestPDFWorkspaceLivesBesideOutput(t *testing.T) {
 	}
 	for _, p := range []string{one, two} {
 		info, e := os.Stat(p)
-		if e != nil || info.Mode().Perm() != 0700 {
-			t.Fatal("workspace permissions", info, e)
+		if e != nil {
+			t.Fatal("workspace stat", e)
+		}
+		// Windows에는 Unix 권한 비트가 없어 Go가 0777로 보고한다. 권한 비교만 Unix 계열에서 한다.
+		// Windows ACL의 안전성은 이 시험으로 검증하지 않는다.
+		if runtime.GOOS != "windows" && info.Mode().Perm() != 0700 {
+			t.Fatal("workspace permissions", info)
 		}
 	}
 	entries, e := os.ReadDir(private)
