@@ -27,6 +27,15 @@ ARTEX Ubuntu에서 기존 Markdown과 작업 자료를 고객 검토용 PDF·HTM
 - **기능**: Git 리포지토리의 커밋 히스토리 및 태그 정보를 직관적인 그래프로 조회.
 - **사용법**: `revlog [-n count]`
 
+### 3. [namefix](namefix/README.md)
+- **기능**: 파일·폴더 이름의 자소 분리(NFD)와 URL 인코딩(`%XX`)을 정리하는 Windows 도구. 탐색기 오른쪽 클릭 메뉴와 명령줄을 지원합니다.
+- **설치**: `namefix\install.bat` (현재 사용자, 관리자 권한 불필요), 제거는 `namefix\uninstall.bat`
+- **사용법**:
+  ```bat
+  namefix -n -r "D:\from-mac"   :: 바뀔 이름 미리 보기
+  namefix -r "D:\from-mac"      :: 폴더와 하위 항목 모두 정리
+  ```
+
 ## 🗄️ 아카이브 (Archived)
 
 사용되지 않거나 대체된 도구들은 `_archive/` 디렉토리로 이동되었습니다.
