@@ -7,6 +7,7 @@ import (
 	_ "image/png"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -31,7 +32,8 @@ type Asset struct {
 }
 
 func readFile(root *os.Root, name string, limit int64) ([]byte, error) {
-	if !filepath.IsLocal(name) || name == "." || filepath.Clean(name) != name || strings.ContainsAny(name, "\\\x00") {
+	// 슬래시(/) 논리 경로만 받는다. Windows에서도 같게 판정하도록 path.Clean으로 비교한다.
+	if !filepath.IsLocal(name) || name == "." || path.Clean(name) != name || strings.ContainsAny(name, "\\\x00") {
 		return nil, Error("FIGURE_PATH_INVALID")
 	}
 	f, e := root.Open(name)

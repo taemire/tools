@@ -18,6 +18,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -105,8 +106,11 @@ func newApp(c config) (*app, error) {
 	return &app{cfg: c, sessions: s, output: o, busy: make(chan struct{}, 1)}, nil
 }
 func (a *app) close() { a.sessions.Close(); a.output.Close() }
+
+// validRel은 세션 안의 슬래시(/) 논리 경로만 허용한다. path.Clean으로 비교해야
+// Windows에서도 filepath.Clean이 구분자를 바꿔 모든 하위 경로를 거부하지 않는다.
 func validRel(s string) error {
-	if !filepath.IsLocal(s) || s == "." || filepath.Clean(s) != s || strings.ContainsAny(s, "\x00\\") {
+	if !filepath.IsLocal(s) || s == "." || path.Clean(s) != s || strings.ContainsAny(s, "\x00\\") {
 		return errors.New("path must be a clean relative path")
 	}
 	return nil
@@ -172,7 +176,7 @@ func stageMarkdown(root *os.Root, rel string, dst string) ([]byte, error) {
 			if e != nil || u.Scheme != "" || u.Host != "" || u.RawQuery != "" || u.Fragment != "" {
 				return ast.WalkStop, errors.New("images must be local session files")
 			}
-			p := filepath.Clean(filepath.Join(filepath.Dir(rel), u.Path))
+			p := path.Join(path.Dir(rel), u.Path)
 			if e = validRel(p); e != nil {
 				return ast.WalkStop, e
 			}

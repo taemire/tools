@@ -79,6 +79,38 @@ func TestLocalImageBoundaryAndMissingAssets(t *testing.T) {
 		t.Fatal("missing image silently accepted")
 	}
 }
+
+// 하위 폴더 Markdown의 상대 이미지도 슬래시 논리 경로로 처리해야 한다. Windows에서
+// filepath.Join·Clean이 구분자를 바꾸면 정상 이미지가 거부됐다.
+func TestSubfolderMarkdownImageUsesSlashLogicalPaths(t *testing.T) {
+	r, _ := sourceRoot(t)
+	r.MkdirAll("docs/images", 0700)
+	r.WriteFile("docs/images/x.png", []byte("image"), 0600)
+	r.WriteFile("docs/report.md", []byte("# Report\n![local](images/x.png)"), 0600)
+	dst := t.TempDir()
+	if _, e := stageMarkdown(r, "docs/report.md", dst); e != nil {
+		t.Fatal(e)
+	}
+	if b, e := os.ReadFile(filepath.Join(dst, "docs", "images", "x.png")); e != nil || string(b) != "image" {
+		t.Fatal("subfolder asset not snapshotted", e)
+	}
+	r.WriteFile("docs/escape.md", []byte("![x](../../outside.png)"), 0600)
+	if _, e := stageMarkdown(r, "docs/escape.md", t.TempDir()); e == nil {
+		t.Fatal("image outside the session accepted")
+	}
+	r.WriteFile("docs/backslash.md", []byte(`![x](images\x.png)`), 0600)
+	if _, e := stageMarkdown(r, "docs/backslash.md", t.TempDir()); e == nil {
+		t.Fatal("backslash image path accepted")
+	}
+	for _, bad := range []string{`docs\report.md`, "docs/../docs/report.md", "./docs/report.md", "/docs/report.md", "."} {
+		if e := validRel(bad); e == nil {
+			t.Fatalf("validRel accepted %q", bad)
+		}
+	}
+	if e := validRel("docs/images/x.png"); e != nil {
+		t.Fatal(e)
+	}
+}
 func TestRendererBusyAndInvalidSessionDoNotRun(t *testing.T) {
 	sessions, out := t.TempDir(), t.TempDir()
 	a, e := newApp(config{sessions, out, "/app/data/report-pdf", "/does-not-exist"})
