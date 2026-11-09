@@ -250,3 +250,5 @@ ARTEX의 `appendix.customer_facts` 슬롯은 독립 쪽에서 시작합니다. �
 기존 customer 템플릿은 긴 문단을 페이지 사이에서 나눌 수 있게 `p`의 `break-inside`·`page-break-inside`만 `auto`로 둡니다. 페이지보다 긴 문단을 통째로 다음 쪽에 밀어 footer만 남기던 빈 페이지를 막습니다. 원문 Markdown·문단 내용과 제목 keep·목록 항목·이미지·표·orphans/widows·글꼴·여백은 바꾸지 않습니다. `scripts/build-converter.sh`로 템플릿이 포함된 converter를 별도로 빌드해야 적용되며 기존 바이너리가 자동 교체되지는 않습니다.
 
 회귀 검증은 `customer_pagination_test.go`의 단문·장문·긴 목록·증거 code·제목 keep 표본과 실제 PDF/HTML·글꼴·목차·본문 위치를 대조합니다. macOS 로컬 폰트 fixture의 통과와 Linux 운영 수용은 별도입니다. 배포·기존 바이너리 교체는 별도 승인 범위입니다.
+
+7,099자 표본은 일반 장문 회귀 시험으로 빈 쪽 결함 재현 시험이 아니며, 같은 Markdown의 실제 엔진 A/B 증적(기준본 10쪽·빈 쪽 3에서 수정본 9쪽·빈 쪽 없음)은 이 시험과 별도 증적으로 구분한다.
