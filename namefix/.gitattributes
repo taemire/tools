@@ -1,0 +1,2 @@
+# cmd.exe는 LF 줄바꿈 배치 파일에서 레이블 탐색 등이 오동작할 수 있으므로 배치 파일은 CRLF로 체크아웃합니다.
+*.bat text eol=crlf
